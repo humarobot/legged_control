@@ -78,7 +78,7 @@ void LeggedController::starting(const ros::Time& time)
   // Initial state
   current_observation_.mode = ModeNumber::STANCE;
   current_observation_.state =
-      rbd_conversions_->computeCentroidalStateFromRbdModel(state_estimate_->update(time, ros::Duration(0.002)));
+      rbd_conversions_->computeCentroidalStateFromRbdModel(state_estimate_->update(time, ros::Duration(0.005)));
   current_observation_.input.setZero(legged_interface_->getCentroidalModelInfo().inputDim);
 
   TargetTrajectories target_trajectories({ current_observation_.time }, { current_observation_.state },
@@ -100,6 +100,7 @@ void LeggedController::starting(const ros::Time& time)
 
 void LeggedController::update(const ros::Time& time, const ros::Duration& period)
 {
+  // std::cout<<period.toSec()<<std::endl; //周期没问题，根据插件controlPeriod参数的设置相应变化，问题出在WBC求解
   // State Estimate
   current_observation_.time += period.toSec();
 
@@ -124,8 +125,11 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
   // Whole body control
   current_observation_.input = optimized_input;
 
+  // std::cout<<optimized_input<<std::endl;
+
   vector_t x = wbc_->update(optimized_state, optimized_input, measured_rbd_state, planned_mode);
 
+  
   vector_t torque = x.tail(12);
 
   vector_t pos_des = centroidal_model::getJointAngles(optimized_state, legged_interface_->getCentroidalModelInfo());

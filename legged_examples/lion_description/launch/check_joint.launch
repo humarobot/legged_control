@@ -1,0 +1,17 @@
+<launch>
+
+
+    <param name="robot_description" command="$(find xacro)/xacro $(find lion_description)/robot.xacro
+       robot_type:=lion hung_up:=false
+    "/>
+
+    <!-- send fake joint values -->
+    <node pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" name="joint_state_publisher_gui">
+        <param name="use_gui" value="true"/>
+    </node>
+
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+        <param name="publish_frequency" type="double" value="50.0"/>
+    </node>
+
+</launch>

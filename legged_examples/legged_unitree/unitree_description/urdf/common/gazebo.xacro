@@ -6,6 +6,7 @@
             <robotNamespace>/</robotNamespace>
             <robotParam>legged_robot_description</robotParam>
             <robotSimType>legged_gazebo/QuadHWSim</robotSimType>
+            <!-- <controlPeriod>0.002</controlPeriod> -->
         </plugin>
     </gazebo>
 

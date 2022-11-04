@@ -69,7 +69,7 @@ ddp
 ; multiple_shooting settings
 multiple_shooting
 {
-  nThreads                              3
+  nThreads                              6
   dt                                    0.015
   sqpIteration                          1
   deltaTol                              1e-4
@@ -106,7 +106,7 @@ mpc
   debugPrint                      false
 
   mpcDesiredFrequency             100  ; [Hz]
-  mrtDesiredFrequency             1000 ; [Hz] Useless
+  mrtDesiredFrequency             200 ; [Hz] Useless
 }
 
 initialState
@@ -160,8 +160,8 @@ Q
   (7,7)   1000.0   ; p_base_y
   (8,8)   1500.0   ; p_base_z
   (9,9)   100.0    ; theta_base_z
-  (10,10) 300.0    ; theta_base_y
-  (11,11) 300.0    ; theta_base_x
+  (10,10) 600.0    ; theta_base_y
+  (11,11) 600.0    ; theta_base_x
 
   ;; Leg Joint Positions: [LF, LH, RF, RH] ;;
   (12,12) 5.0     ; LF_HAA
@@ -225,9 +225,9 @@ frictionConeSoftConstraint
 
 torqueLimitsTask
 {
-   (0,0)  33.5     ; HAA
-   (1,0)  33.5     ; HFE
-   (2,0)  33.5     ; KFE
+   (0,0)  60.     ; HAA
+   (1,0)  60.     ; HFE
+   (2,0)  60.     ; KFE
 }
 
 frictionConeTask
