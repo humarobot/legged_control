@@ -6,3 +6,31 @@ controllers:
     type: legged/LeggedController
   legged_cheater_controller:
     type: legged/LeggedCheaterController
+
+  joint1_pos_controller:
+    type: position_controllers/JointPositionController
+    joint: joint1
+    # pid: {p: 1000, i: 0.01, d: 10}
+  joint2_pos_controller:
+    type: position_controllers/JointPositionController
+    joint: joint2
+    # pid: {p: 1000, i: 0.01, d: 10}
+  joint3_pos_controller:
+    type: position_controllers/JointPositionController
+    joint: joint3
+    # pid: {p: 1000, i: 0.01, d: 10}
+  joint4_pos_controller:
+    type: position_controllers/JointPositionController
+    joint: joint4
+    # pid: {p: 1000, i: 0.01, d: 10}
+  joint5_pos_controller:
+    type: position_controllers/JointPositionController
+    joint: joint5
+    # pid: {p: 100, i: 0.01, d: 10}
+  joint6_pos_controller:
+    type: position_controllers/JointPositionController
+    joint: joint6
+    # pid: {p: 100, i: 0.01, d: 10}
+
+
+
