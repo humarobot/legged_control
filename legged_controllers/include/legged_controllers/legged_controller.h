@@ -62,6 +62,7 @@ protected:
 
   SystemObservation current_observation_;
   std::vector<HybridJointHandle> hybrid_joint_handles_;
+  std::vector<HybridJointHandle> arm_joint_handles_;
 
 private:
   std::thread mpc_thread_;

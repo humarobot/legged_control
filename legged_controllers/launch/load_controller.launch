@@ -23,12 +23,6 @@
           controllers/joint_state_controller
           controllers/legged_controller
           controllers/legged_cheater_controller
-          controllers/joint1_pos_controller
-          controllers/joint2_pos_controller
-          controllers/joint3_pos_controller
-          controllers/joint4_pos_controller
-          controllers/joint5_pos_controller
-          controllers/joint6_pos_controller
 "/>
 
     <node unless="$(arg cheater)" name="controller_loader" pkg="controller_manager" type="controller_manager"
