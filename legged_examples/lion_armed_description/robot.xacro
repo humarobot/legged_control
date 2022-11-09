@@ -651,8 +651,8 @@
       <limit
         lower="-2.618"
         upper="2.618"
-        effort="15.0"
-        velocity="20.0" />
+        effort="25.0"
+        velocity="10.0" />
         
     </joint>
     <link name="upper_arm_link">
@@ -704,8 +704,8 @@
       <limit
         lower="0"
         upper="3.665"
-        effort="15.0"
-        velocity="20.0" />
+        effort="25.0"
+        velocity="10.0" />
     </joint>
     <link name="elbow_link">
       <inertial>
@@ -756,8 +756,8 @@
       <limit
         lower="0"
         upper="4.188"
-        effort="15.0"
-        velocity="20.0" />
+        effort="25.0"
+        velocity="10.0" />
     </joint>
     <link name="lower_arm_link">
       <inertial>
@@ -806,10 +806,11 @@
       <axis
         xyz="-1 0 0" />
       <limit
-        lower="-3.14"
-        upper="3.14"
+        lower="-3."
+        upper="3."
         effort="15.0"
-        velocity="20.0" />
+        velocity="10.0" />
+      <dynamics damping="0.1" friction="0.01"/>
     </joint>
     <link name="wrist_link">
       <inertial>
@@ -861,7 +862,8 @@
         lower="-1.571"
         upper="1.571"
         effort="15.0"
-        velocity="20.0" />
+        velocity="10.0" />
+      <dynamics damping="0.1" friction="0.01"/>
     </joint>
     <link name="hand_link">
       <inertial>
@@ -910,10 +912,11 @@
       <axis
         xyz="1 0 0" />
       <limit
-        lower="-3.14"
-        upper="3.14"
+        lower="-10."
+        upper="10."
         effort="15.0"
-        velocity="20.0" />
+        velocity="10.0" />
+      <dynamics damping="0.1" friction="0.01"/>
     </joint>
 
     <xacro:IMU connected_to="base" imu_name="unitree_imu" xyz="0. 0. 0." rpy="0. 0. 0."/>

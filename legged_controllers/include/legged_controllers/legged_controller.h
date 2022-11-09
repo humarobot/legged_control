@@ -18,6 +18,15 @@
 
 #include "legged_controllers/safety_checker.h"
 
+#include "pinocchio/parsers/sample-models.hpp"
+#include "pinocchio/parsers/urdf.hpp"
+#include "pinocchio/spatial/explog.hpp"
+#include "pinocchio/algorithm/kinematics.hpp"
+#include "pinocchio/algorithm/jacobian.hpp"
+#include "pinocchio/algorithm/joint-configuration.hpp"
+
+#include "arm_reference.h"
+
 namespace legged
 {
 using namespace ocs2;
@@ -48,6 +57,12 @@ protected:
                                   const std::vector<ContactSensorHandle>& contact_sensor_handles,
                                   const hardware_interface::ImuSensorHandle& imu_sensor_handle);
 
+  void setupArmController();
+  void inverseKine();
+  Eigen::VectorXd arm_q_;
+  pinocchio::Model arm_model_;
+  pinocchio::Data arm_data_;
+
   std::shared_ptr<LeggedInterface> legged_interface_;
   std::shared_ptr<Wbc> wbc_;
   std::shared_ptr<SafetyChecker> safety_checker_;
@@ -63,6 +78,8 @@ protected:
   SystemObservation current_observation_;
   std::vector<HybridJointHandle> hybrid_joint_handles_;
   std::vector<HybridJointHandle> arm_joint_handles_;
+
+  std::shared_ptr<ArmReference> arm_ref_;
 
 private:
   std::thread mpc_thread_;
