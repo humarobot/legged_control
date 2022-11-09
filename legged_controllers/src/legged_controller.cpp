@@ -218,8 +218,15 @@ void LeggedController::setupMpc()
   mpc_->getSolverPtr()->setReferenceManager(ros_reference_manager_ptr);
   observation_publisher_ = nh.advertise<ocs2_msgs::mpc_observation>(robot_name + "_mpc_observation", 1);
 
-  auto arm_ref_ptr = std::make_shared<ArmReference>(robot_name);
-  arm_ref_ptr->subscribe(nh);
+  ros::NodeHandle nh2;
+  auto armReferenceCallback = [this](const geometry_msgs::PoseConstPtr& msg) {
+    std::cout<<"callback"<<std::endl;
+    std::cout<<msg->position<<std::endl;
+    
+  };
+  armRefSubscriber_ = nh2.subscribe<geometry_msgs::Pose>(robot_name + "_EE_pose", 1, armReferenceCallback);
+  // auto arm_ref_ptr = std::make_shared<ArmReference>(robot_name);
+  // arm_ref_ptr->subscribe(nh);
   // this->arm_ref_ = std::move(arm_ref_ptr);
 }
 

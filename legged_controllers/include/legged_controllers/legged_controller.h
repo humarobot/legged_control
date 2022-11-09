@@ -26,6 +26,7 @@
 #include "pinocchio/algorithm/joint-configuration.hpp"
 
 #include "arm_reference.h"
+#include "geometry_msgs/Pose.h"
 
 namespace legged
 {
@@ -80,6 +81,7 @@ protected:
   std::vector<HybridJointHandle> arm_joint_handles_;
 
   std::shared_ptr<ArmReference> arm_ref_;
+  ros::Subscriber armRefSubscriber_;
 
 private:
   std::thread mpc_thread_;
