@@ -77,6 +77,13 @@ bool LeggedController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHand
   // Safety Checker
   safety_checker_ = std::make_shared<SafetyChecker>(legged_interface_->getCentroidalModelInfo());
 
+  ros::NodeHandle nh2;
+  auto armReferenceCallback = [this](const geometry_msgs::PoseConstPtr& msg) {
+    std::cout<<"callback"<<std::endl;
+    inverseKine(msg);
+  };
+  armRefSubscriber_ = nh2.subscribe<geometry_msgs::Pose>("legged_robot_EE_pose", 1, armReferenceCallback);
+
   return true;
 }
 
@@ -103,8 +110,10 @@ void LeggedController::starting(const ros::Time& time)
   ROS_INFO_STREAM("Initial policy has been received.");
 
   mpc_running_ = true;
+  
   //Arm inverse kinematics
   inverseKine();
+  // arm_q_.setZero();
 }
 
 void LeggedController::update(const ros::Time& time, const ros::Duration& period)
@@ -151,26 +160,18 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
     stopRequest(time);
   }
 
-  // if(arm_ref_->sub_flag_==true){
-  //   double t = time.toSec();
-  //   double z = 0.2*sin(t)+0.25;
-  //   for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j)
-  //     hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 5, 3, torque(j));
-  //   // ARM control
-  //   arm_joint_handles_[0].setCommand(arm_q_[0],0,500,3,0.0);
-  //   arm_joint_handles_[1].setCommand(arm_q_[1],0,500,3,0.0);
-  //   arm_joint_handles_[2].setCommand(arm_q_[2],0,500,3,0.0);
-  //   arm_joint_handles_[3].setCommand(arm_q_[3],0,120,0,0.0);
-  //   arm_joint_handles_[4].setCommand(arm_q_[4],0,120,0,0.0);
-  //   arm_joint_handles_[5].setCommand(arm_q_[5],0,120,0,0.0);
-  //   // std::cout<<arm_q_.transpose()<<std::endl;
-  //   arm_ref_->sub_flag_=false;
-  // }
-  // std::cout<<arm_ref_->sub_flag_<<std::endl;
   
+  for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j)
+    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 5, 3, torque(j));
+  // ARM control
 
-  
-
+  arm_joint_handles_[0].setCommand(arm_q_[0],0,500,3,0.0);
+  arm_joint_handles_[1].setCommand(arm_q_[1],0,500,3,0.0);
+  arm_joint_handles_[2].setCommand(arm_q_[2],0,500,3,0.0);
+  arm_joint_handles_[3].setCommand(arm_q_[3],0,120,0,0.0);
+  arm_joint_handles_[4].setCommand(arm_q_[4],0,120,0,0.0);
+  arm_joint_handles_[5].setCommand(arm_q_[5],0,120,0,0.0);
+  // std::cout<<arm_q_.transpose()<<std::endl;
 
   // Visualization
   visualizer_->update(current_observation_, mpc_mrt_interface_->getPolicy(), mpc_mrt_interface_->getCommand());
@@ -218,13 +219,6 @@ void LeggedController::setupMpc()
   mpc_->getSolverPtr()->setReferenceManager(ros_reference_manager_ptr);
   observation_publisher_ = nh.advertise<ocs2_msgs::mpc_observation>(robot_name + "_mpc_observation", 1);
 
-  ros::NodeHandle nh2;
-  auto armReferenceCallback = [this](const geometry_msgs::PoseConstPtr& msg) {
-    std::cout<<"callback"<<std::endl;
-    std::cout<<msg->position<<std::endl;
-    
-  };
-  armRefSubscriber_ = nh2.subscribe<geometry_msgs::Pose>(robot_name + "_EE_pose", 1, armReferenceCallback);
   // auto arm_ref_ptr = std::make_shared<ArmReference>(robot_name);
   // arm_ref_ptr->subscribe(nh);
   // this->arm_ref_ = std::move(arm_ref_ptr);
@@ -285,6 +279,59 @@ void LeggedController::setupArmController(){
 
 }
 
+void LeggedController::inverseKine(const geometry_msgs::PoseConstPtr& msg){
+  const int JOINT_ID = 6;
+  Eigen::Vector3d pos(msg->position.x,msg->position.y,msg->position.z);
+  const pinocchio::SE3 oMdes(Eigen::Matrix3d::Identity(), pos);
+
+  Eigen::VectorXd q = pinocchio::neutral(arm_model_);
+  const double eps = 1e-4;
+  const int IT_MAX = 1000;
+  const double DT = 1e-1;
+  const double damp = 1e-6;
+
+  pinocchio::Data::Matrix6x J(6, arm_model_.nv);
+  J.setZero();
+
+  bool success = false;
+  typedef Eigen::Matrix<double, 6, 1> Vector6d;
+  Vector6d err;
+  Eigen::VectorXd v(arm_model_.nv);
+  for (int i = 0;; i++){
+    pinocchio::forwardKinematics(arm_model_, arm_data_, q);
+    const pinocchio::SE3 dMi = oMdes.actInv(arm_data_.oMi[JOINT_ID]);
+    err = pinocchio::log6(dMi).toVector();
+    if (err.norm() < eps)
+    {
+    success = true;
+    break;
+    }
+    if (i >= IT_MAX)
+    {
+    success = false;
+    break;
+    }
+    pinocchio::computeJointJacobian(arm_model_, arm_data_, q, JOINT_ID, J);
+    pinocchio::Data::Matrix6 JJt;
+    JJt.noalias() = J * J.transpose();
+    JJt.diagonal().array() += damp;
+    v.noalias() = -J.transpose() * JJt.ldlt().solve(err);
+    q = pinocchio::integrate(arm_model_, q, v * DT);
+    // if (!(i % 10))
+    // std::cout << i << ": error = " << err.transpose() << std::endl;
+  }
+  if (success){
+      std::cout << "Convergence achieved!" << std::endl;
+      arm_q_=q;
+  }
+  else{
+      std::cout << "\nWarning: the iterative algorithm has not reached convergence to the desired precision" << std::endl;
+  }
+  std::cout << "\nresult: " << q.transpose() << std::endl;
+  // std::cout << "\nfinal error: " << err.transpose() << std::endl;
+  // std::cout<<arm_q_[0]<<" "<<arm_q_[1]<<" "<<arm_q_[2]<<" "<<arm_q_[3]<<" "<<arm_q_[4]<<" "<<arm_q_[5]<<" "<<std::endl;
+}
+
 void LeggedController::inverseKine(){
   const int JOINT_ID = 6;
   const pinocchio::SE3 oMdes(Eigen::Matrix3d::Identity(), Eigen::Vector3d(0., 0., 0.4));
@@ -322,8 +369,8 @@ void LeggedController::inverseKine(){
     JJt.diagonal().array() += damp;
     v.noalias() = -J.transpose() * JJt.ldlt().solve(err);
     q = pinocchio::integrate(arm_model_, q, v * DT);
-    if (!(i % 10))
-    std::cout << i << ": error = " << err.transpose() << std::endl;
+    // if (!(i % 10))
+    // std::cout << i << ": error = " << err.transpose() << std::endl;
   }
   if (success){
       std::cout << "Convergence achieved!" << std::endl;
@@ -333,9 +380,10 @@ void LeggedController::inverseKine(){
       std::cout << "\nWarning: the iterative algorithm has not reached convergence to the desired precision" << std::endl;
   }
   std::cout << "\nresult: " << q.transpose() << std::endl;
-  std::cout << "\nfinal error: " << err.transpose() << std::endl;
+  // std::cout << "\nfinal error: " << err.transpose() << std::endl;
   std::cout<<arm_q_[0]<<" "<<arm_q_[1]<<" "<<arm_q_[2]<<" "<<arm_q_[3]<<" "<<arm_q_[4]<<" "<<arm_q_[5]<<" "<<std::endl;
 }
+
 }  // namespace legged
 
 PLUGINLIB_EXPORT_CLASS(legged::LeggedController, controller_interface::ControllerBase)

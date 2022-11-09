@@ -59,6 +59,7 @@ protected:
                                   const hardware_interface::ImuSensorHandle& imu_sensor_handle);
 
   void setupArmController();
+  void inverseKine(const geometry_msgs::PoseConstPtr& );
   void inverseKine();
   Eigen::VectorXd arm_q_;
   pinocchio::Model arm_model_;
