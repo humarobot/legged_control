@@ -58,10 +58,10 @@ TargetTrajectories goalToTargetTrajectories(const vector_t& goal, const SystemOb
     vector_t target(6);
     target(0) = goal(0);
     target(1) = goal(1);
-    target(2) = COM_HEIGHT;
+    target(2) = goal(2);
     target(3) = goal(3);
-    target(4) = 0;
-    target(5) = 0;
+    target(4) = goal(4);
+    target(5) = goal(5);
     return target;
   }();
   const scalar_t target_reaching_time = observation.time + estimateTimeToTarget(target_pose - current_pose);
