@@ -145,13 +145,13 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
 
   // std::cout<<optimized_input<<std::endl;
 
-  vector_t x = wbc_->update(optimized_state, optimized_input, measured_rbd_state, planned_mode);
+  // vector_t x = wbc_->update(optimized_state, optimized_input, measured_rbd_state, planned_mode);
 
   
-  vector_t torque = x.tail(12);
+  // vector_t torque = x.tail(12);
 
-  vector_t pos_des = centroidal_model::getJointAngles(optimized_state, legged_interface_->getCentroidalModelInfo());
-  vector_t vel_des = centroidal_model::getJointVelocities(optimized_input, legged_interface_->getCentroidalModelInfo());
+  // vector_t pos_des = centroidal_model::getJointAngles(optimized_state, legged_interface_->getCentroidalModelInfo());
+  // vector_t vel_des = centroidal_model::getJointVelocities(optimized_input, legged_interface_->getCentroidalModelInfo());
 
   // Safety check, if failed, stop the controller
   if (!safety_checker_->check(current_observation_, optimized_state, optimized_input))
@@ -161,8 +161,8 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
   }
 
   
-  for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j)
-    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 5, 3, torque(j));
+  // for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j)
+  //   hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 5, 3, torque(j));
   // ARM control
 
   arm_joint_handles_[0].setCommand(arm_q_[0],0,500,3,0.0);
