@@ -27,6 +27,8 @@
 
 #include "arm_reference.h"
 #include "geometry_msgs/Pose.h"
+#include "geometry_msgs/PoseStamped.h"
+#include "nav_msgs/Odometry.h"
 
 namespace legged
 {
@@ -59,8 +61,9 @@ protected:
                                   const hardware_interface::ImuSensorHandle& imu_sensor_handle);
 
   void setupArmController();
-  void inverseKine(const geometry_msgs::PoseConstPtr& );
+  void inverseKine(const geometry_msgs::PoseStampedConstPtr& );
   void inverseKine();
+  void inverseKineWBC(const Eigen::Vector3d&);
   Eigen::VectorXd arm_q_;
   pinocchio::Model arm_model_;
   pinocchio::Data arm_data_;
@@ -83,10 +86,15 @@ protected:
 
   std::shared_ptr<ArmReference> arm_ref_;
   ros::Subscriber armRefSubscriber_;
+  ros::Subscriber odomSubscriber_;
+
+
 
 private:
   std::thread mpc_thread_;
   std::atomic_bool controller_running_, mpc_running_{};
+
+  double counter_;
 };
 
 class LeggedCheaterController : public LeggedController

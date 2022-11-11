@@ -24,6 +24,9 @@
 #include <angles/angles.h>
 #include <pluginlib/class_list_macros.hpp>
 #include <cmath>
+#include <tf/tf.h>
+#include "tf_conversions/tf_eigen.h"
+
 
 namespace legged
 {
@@ -78,11 +81,29 @@ bool LeggedController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHand
   safety_checker_ = std::make_shared<SafetyChecker>(legged_interface_->getCentroidalModelInfo());
 
   ros::NodeHandle nh2;
-  auto armReferenceCallback = [this](const geometry_msgs::PoseConstPtr& msg) {
-    std::cout<<"callback"<<std::endl;
+  auto armReferenceCallback = [this](const geometry_msgs::PoseStampedConstPtr& msg) {
+    // std::cout<<"callback"<<std::endl;
     inverseKine(msg);
   };
-  armRefSubscriber_ = nh2.subscribe<geometry_msgs::Pose>("legged_robot_EE_pose", 1, armReferenceCallback);
+  armRefSubscriber_ = nh2.subscribe<geometry_msgs::PoseStamped>("legged_robot_EE_pose", 1, armReferenceCallback);
+
+  ros::NodeHandle nh3;
+  counter_ = 0;
+  auto basePoseCallback = [this](const nav_msgs::OdometryConstPtr& msg) {
+    counter_++;
+    // std::cout<<"odom callback"<<std::endl;
+    double dx = msg->pose.pose.position.x;
+    double dy = msg->pose.pose.position.y;
+    double dz = msg->pose.pose.position.z;
+    Eigen::Vector3d basePos(dx,dy,dz);
+    // std::cout<<basePos.transpose()<<std::endl;
+    if(counter_ == 20){
+      inverseKineWBC(basePos);
+      counter_ = 0; 
+    }
+                                             
+  };
+  odomSubscriber_ = nh3.subscribe<nav_msgs::Odometry>("odom",1,basePoseCallback);
 
   return true;
 }
@@ -279,10 +300,18 @@ void LeggedController::setupArmController(){
 
 }
 
-void LeggedController::inverseKine(const geometry_msgs::PoseConstPtr& msg){
+void LeggedController::inverseKine(const geometry_msgs::PoseStampedConstPtr& msg){
   const int JOINT_ID = 6;
-  Eigen::Vector3d pos(msg->position.x,msg->position.y,msg->position.z);
-  const pinocchio::SE3 oMdes(Eigen::Matrix3d::Identity(), pos);
+  //Get desired pos
+  Eigen::Vector3d pos(msg->pose.position.x,msg->pose.position.y,msg->pose.position.z);
+  //Get desired quaternion and trans to rotational matrix
+  Eigen::Quaterniond quat;
+  quat.x() = msg->pose.orientation.x;
+  quat.y() = msg->pose.orientation.y;
+  quat.z() = msg->pose.orientation.z;
+  quat.w() = msg->pose.orientation.w;
+  Eigen::Matrix3d R = quat.normalized().toRotationMatrix();
+  const pinocchio::SE3 oMdes(R, pos);
 
   Eigen::VectorXd q = pinocchio::neutral(arm_model_);
   const double eps = 1e-4;
@@ -384,6 +413,58 @@ void LeggedController::inverseKine(){
   std::cout<<arm_q_[0]<<" "<<arm_q_[1]<<" "<<arm_q_[2]<<" "<<arm_q_[3]<<" "<<arm_q_[4]<<" "<<arm_q_[5]<<" "<<std::endl;
 }
 
+void LeggedController::inverseKineWBC(const Eigen::Vector3d& base_pos){
+  const int JOINT_ID = 6;
+  Eigen::Vector3d pos_with_base(0.5,0.,0.4);
+  const pinocchio::SE3 oMdes(Eigen::Matrix3d::Identity(), pos_with_base - base_pos);
+
+  Eigen::VectorXd q = pinocchio::neutral(arm_model_);
+  const double eps = 1e-4;
+  const int IT_MAX = 1000;
+  const double DT = 1e-1;
+  const double damp = 1e-6;
+
+  pinocchio::Data::Matrix6x J(6, arm_model_.nv);
+  J.setZero();
+
+  bool success = false;
+  typedef Eigen::Matrix<double, 6, 1> Vector6d;
+  Vector6d err;
+  Eigen::VectorXd v(arm_model_.nv);
+  for (int i = 0;; i++){
+    pinocchio::forwardKinematics(arm_model_, arm_data_, q);
+    const pinocchio::SE3 dMi = oMdes.actInv(arm_data_.oMi[JOINT_ID]);
+    err = pinocchio::log6(dMi).toVector();
+    if (err.norm() < eps)
+    {
+    success = true;
+    break;
+    }
+    if (i >= IT_MAX)
+    {
+    success = false;
+    break;
+    }
+    pinocchio::computeJointJacobian(arm_model_, arm_data_, q, JOINT_ID, J);
+    pinocchio::Data::Matrix6 JJt;
+    JJt.noalias() = J * J.transpose();
+    JJt.diagonal().array() += damp;
+    v.noalias() = -J.transpose() * JJt.ldlt().solve(err);
+    q = pinocchio::integrate(arm_model_, q, v * DT);
+    // if (!(i % 10))
+    // std::cout << i << ": error = " << err.transpose() << std::endl;
+  }
+  if (success){
+      std::cout << "Convergence achieved!" << std::endl;
+      arm_q_=q;
+  }
+  else{
+      std::cout << "\nWarning: the iterative algorithm has not reached convergence to the desired precision" << std::endl;
+  }
+  // std::cout << "\nresult: " << q.transpose() << std::endl;
+  // // std::cout << "\nfinal error: " << err.transpose() << std::endl;
+  // std::cout<<arm_q_[0]<<" "<<arm_q_[1]<<" "<<arm_q_[2]<<" "<<arm_q_[3]<<" "<<arm_q_[4]<<" "<<arm_q_[5]<<" "<<std::endl;  
+}
 }  // namespace legged
 
 PLUGINLIB_EXPORT_CLASS(legged::LeggedController, controller_interface::ControllerBase)
