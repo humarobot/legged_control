@@ -1,0 +1,13 @@
+<launch>
+
+    <arg name="hung_up" default="false"/>
+
+    <param name="legged_robot_description" command="$(find xacro)/xacro $(find lion_description)/robot.xacro"/>
+
+    <rosparam file="$(find lion_armed_hw)/config/default.yaml" command="load"/>
+
+    <node name="lion_armed_hw" pkg="lion_armed_hw" type="lion_armed_hw" output="screen">
+
+    </node>
+
+</launch>

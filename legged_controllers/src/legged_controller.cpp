@@ -26,6 +26,9 @@
 #include <cmath>
 #include <tf/tf.h>
 #include "tf_conversions/tf_eigen.h"
+#include <pinocchio/algorithm/frames.hpp>
+#include <pinocchio/algorithm/crba.hpp>
+#include <pinocchio/algorithm/rnea.hpp>
 
 
 namespace legged
@@ -80,30 +83,24 @@ bool LeggedController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHand
   // Safety Checker
   safety_checker_ = std::make_shared<SafetyChecker>(legged_interface_->getCentroidalModelInfo());
 
-  ros::NodeHandle nh2;
-  auto armReferenceCallback = [this](const geometry_msgs::PoseStampedConstPtr& msg) {
-    // std::cout<<"callback"<<std::endl;
-    inverseKine(msg);
-  };
-  armRefSubscriber_ = nh2.subscribe<geometry_msgs::PoseStamped>("legged_robot_EE_pose", 1, armReferenceCallback);
 
-  ros::NodeHandle nh3;
-  counter_ = 0;
-  auto basePoseCallback = [this](const nav_msgs::OdometryConstPtr& msg) {
-    counter_++;
-    // std::cout<<"odom callback"<<std::endl;
-    double dx = msg->pose.pose.position.x;
-    double dy = msg->pose.pose.position.y;
-    double dz = msg->pose.pose.position.z;
-    Eigen::Vector3d basePos(dx,dy,dz);
-    // std::cout<<basePos.transpose()<<std::endl;
-    if(counter_ == 20){
-      inverseKineWBC(basePos);
-      counter_ = 0; 
-    }
+  // ros::NodeHandle nh3;
+  // counter_ = 0;
+  // auto basePoseCallback = [this](const nav_msgs::OdometryConstPtr& msg) {
+  //   counter_++;
+  //   // std::cout<<"odom callback"<<std::endl;
+  //   double dx = msg->pose.pose.position.x;
+  //   double dy = msg->pose.pose.position.y;
+  //   double dz = msg->pose.pose.position.z;
+  //   Eigen::Vector3d basePos(dx,dy,dz);
+  //   // std::cout<<basePos.transpose()<<std::endl;
+  //   if(counter_ == 20){
+  //     inverseKineWBC(basePos);
+  //     counter_ = 0; 
+  //   }
                                              
-  };
-  odomSubscriber_ = nh3.subscribe<nav_msgs::Odometry>("odom",1,basePoseCallback);
+  // };
+  // odomSubscriber_ = nh3.subscribe<nav_msgs::Odometry>("odom",1,basePoseCallback);
 
   return true;
 }
@@ -132,9 +129,17 @@ void LeggedController::starting(const ros::Time& time)
 
   mpc_running_ = true;
   
-  //Arm inverse kinematics
-  inverseKine();
-  // arm_q_.setZero();
+  // //Arm inverse kinematics
+  // inverseKine();
+
+  // ros::NodeHandle nh2;
+  // auto armReferenceCallback = [this](const geometry_msgs::PoseStampedConstPtr& msg) {
+  //   // std::cout<<"callback"<<std::endl;
+  //   // std::cout<<"test"<<std::endl;
+  //   inverseKine(msg);
+  // };
+  // armRefSubscriber_ = nh2.subscribe<geometry_msgs::PoseStamped>("legged_robot_EE_pose", 1, armReferenceCallback);
+  
 }
 
 void LeggedController::update(const ros::Time& time, const ros::Duration& period)
@@ -182,23 +187,26 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
   }
 
   
-  for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j)
-    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 5, 3, torque(j));
+  // for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j)
+  //   hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 5, 3, torque(j));
   // ARM control
-
-  arm_joint_handles_[0].setCommand(arm_q_[0],0,500,3,0.0);
-  arm_joint_handles_[1].setCommand(arm_q_[1],0,500,3,0.0);
-  arm_joint_handles_[2].setCommand(arm_q_[2],0,500,3,0.0);
-  arm_joint_handles_[3].setCommand(arm_q_[3],0,120,0,0.0);
-  arm_joint_handles_[4].setCommand(arm_q_[4],0,120,0,0.0);
-  arm_joint_handles_[5].setCommand(arm_q_[5],0,120,0,0.0);
+  // impedanceControl();
+  arm_joint_handles_[3].setCommand(0,0,1,0,0);
+  arm_joint_handles_[4].setCommand(0,0,1,0,0);
+  arm_joint_handles_[5].setCommand(0,0,1,0,0);
+  // arm_joint_handles_[0].setCommand(arm_q_[0],0,500,3,0.0);
+  // arm_joint_handles_[1].setCommand(arm_q_[1],0,500,3,0.0);
+  // arm_joint_handles_[2].setCommand(arm_q_[2],0,500,3,0.0);
+  // arm_joint_handles_[3].setCommand(arm_q_[3],0,120,0,0.0);
+  // arm_joint_handles_[4].setCommand(arm_q_[4],0,120,0,0.0);
+  // arm_joint_handles_[5].setCommand(arm_q_[5],0,120,0,0.0);
   // std::cout<<arm_q_.transpose()<<std::endl;
 
   // Visualization
-  visualizer_->update(current_observation_, mpc_mrt_interface_->getPolicy(), mpc_mrt_interface_->getCommand());
+  // visualizer_->update(current_observation_, mpc_mrt_interface_->getPolicy(), mpc_mrt_interface_->getCommand());
 
   // Publish the observation. Only needed for the command interface
-  observation_publisher_.publish(ros_msg_conversions::createObservationMsg(current_observation_));
+  // observation_publisher_.publish(ros_msg_conversions::createObservationMsg(current_observation_));
 }
 
 LeggedController::~LeggedController()
@@ -465,7 +473,87 @@ void LeggedController::inverseKineWBC(const Eigen::Vector3d& base_pos){
   // // std::cout << "\nfinal error: " << err.transpose() << std::endl;
   // std::cout<<arm_q_[0]<<" "<<arm_q_[1]<<" "<<arm_q_[2]<<" "<<arm_q_[3]<<" "<<arm_q_[4]<<" "<<arm_q_[5]<<" "<<std::endl;  
 }
+
+void LeggedController::updateArmState(){
+  // std::cout<<"0"<<std::endl;
+  for(int i=0;i<6;i++){
+    arm_measured_q_(i,0) = arm_joint_handles_[i].getPosition();
+    arm_measured_v_(i,0) = arm_joint_handles_[i].getVelocity();
+  }  
+  std::cout<<"arm q:"<<arm_measured_q_.transpose()<<std::endl;
+  std::cout<<"arm v:"<<arm_measured_v_.transpose()<<std::endl;
+  pinocchio::forwardKinematics(arm_model_, arm_data_, arm_measured_q_, arm_measured_v_);
+  pinocchio::computeJointJacobians(arm_model_, arm_data_);
+  pinocchio::updateFramePlacements(arm_model_, arm_data_);
+  pinocchio::crba(arm_model_, arm_data_, arm_measured_q_);
+  arm_data_.M.triangularView<Eigen::StrictlyLower>() = arm_data_.M.transpose().triangularView<Eigen::StrictlyLower>();
+  pinocchio::nonLinearEffects(arm_model_, arm_data_, arm_measured_q_, arm_measured_v_);
+}
+
+void LeggedController::impedanceControl(){
+  updateArmState();
+  const int JOINT_ID = 6;
+  pinocchio::Data::Matrix6x J(6, 6),J_inv(6,6),A_mass(6,6),J_dot(6,6),B(6,6),K(6,6);
+  pinocchio::Data::Matrix6x ita(6,1);
+  typedef Eigen::Matrix<double, 6, 1> Vector6d;
+  Vector6d err,tau,ones;
+  ones<<1,1,1,1,1,1;
+  J.setZero();
+  //计算操作空间动力学
+  pinocchio::getJointJacobian(arm_model_,arm_data_,JOINT_ID,pinocchio::ReferenceFrame::LOCAL,J);
+  pinocchio::getJointJacobianTimeVariation(arm_model_,arm_data_,JOINT_ID,pinocchio::ReferenceFrame::LOCAL,J_dot);
+  J_inv=J.inverse();
+  // J_inv = J.pseudoInverse();
+  // std::cout<<"1"<<std::endl;
+  // J_inv = J.ldlt().solve(ones);
+  // std::cout<<"2"<<std::endl;
+  A_mass = J_inv.transpose()*arm_data_.M*J_inv;
+  ita = J_inv.transpose()*arm_data_.nle-A_mass*J_dot*arm_measured_v_;
+  std::cout<<"J inverse transpose:"<<std::endl;
+  std::cout<<J_inv.transpose()<<std::endl;
+  std::cout<<"mass matrix M:"<<std::endl;
+  std::cout<<arm_data_.M<<std::endl;
+  std::cout<<"J derivative:"<<std::endl;
+  std::cout<<J_dot<<std::endl;
+  std::cout<<"nonlinear term:"<<std::endl;
+  std::cout<<arm_data_.nle.transpose()<<std::endl;
+  // std::cout<<"3"<<std::endl;
+  //阻抗控制
+  B = Eigen::Matrix<double,6,6>::Identity()*5.0;
+  B(3,3) = 0.0;
+  B(4,4) = 0.0;
+  B(5,5) = 0.0;
+  K = Eigen::Matrix<double,6,6>::Identity()*5.0;
+  K(0,0) = 50.0;
+  K(1,1) = 50.0;
+  K(2,2) = 50.0;
+  // K(3,3) = 0.0;
+  // K(4,4) = 0.0;
+  // K(5,5) = 0.0;
+  // std::cout<<"4"<<std::endl;
+  const pinocchio::SE3 oMdes(Eigen::Matrix3d::Identity(), Eigen::Vector3d(0., 0., 0.4));
+  // std::cout<<"5"<<std::endl;
+  const pinocchio::SE3 iMd = arm_data_.oMi[JOINT_ID].actInv(oMdes);
+  // std::cout<<"6"<<std::endl;
+  err = pinocchio::log6(iMd).toVector();
+  // std::cout<<"7"<<std::endl;
+  // tau = J.transpose()*(ita-B*J*arm_measured_v_-K*err);
+  // tau = J.transpose()*(-B*J*arm_measured_v_-K*err);
+  tau = J.transpose()*(K*err-B*J*arm_measured_v_)+arm_data_.nle;
+
+
+  arm_joint_handles_[0].setCommand(0,0,0,0,tau[0]);
+  arm_joint_handles_[1].setCommand(0,0,0,0,tau[1]);
+  arm_joint_handles_[2].setCommand(0,0,0,0,tau[2]);
+  arm_joint_handles_[3].setCommand(0,0,0,0,tau[3]);
+  arm_joint_handles_[4].setCommand(0,0,0,0,tau[4]);
+  arm_joint_handles_[5].setCommand(0,0,0,0,tau[5]);
+
+}
+
+
 }  // namespace legged
+
 
 PLUGINLIB_EXPORT_CLASS(legged::LeggedController, controller_interface::ControllerBase)
 PLUGINLIB_EXPORT_CLASS(legged::LeggedCheaterController, controller_interface::ControllerBase)

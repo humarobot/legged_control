@@ -64,6 +64,8 @@ protected:
   void inverseKine(const geometry_msgs::PoseStampedConstPtr& );
   void inverseKine();
   void inverseKineWBC(const Eigen::Vector3d&);
+  void updateArmState();
+  void impedanceControl();
   Eigen::VectorXd arm_q_;
   pinocchio::Model arm_model_;
   pinocchio::Data arm_data_;
@@ -88,6 +90,7 @@ protected:
   ros::Subscriber armRefSubscriber_;
   ros::Subscriber odomSubscriber_;
 
+  Eigen::Matrix<double, 6, 1> arm_measured_q_,arm_measured_v_;
 
 
 private:
