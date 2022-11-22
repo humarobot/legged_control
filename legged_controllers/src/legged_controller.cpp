@@ -191,9 +191,12 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
   //   hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 5, 3, torque(j));
   // ARM control
   // impedanceControl();
-  arm_joint_handles_[3].setCommand(0,0,1,0,0);
-  arm_joint_handles_[4].setCommand(0,0,1,0,0);
-  arm_joint_handles_[5].setCommand(0,0,1,0,0);
+  arm_joint_handles_[0].setCommand(0,0,0,0,0);
+  arm_joint_handles_[1].setCommand(0.1,0,0,0,0);
+  arm_joint_handles_[2].setCommand(0.1,0,0,0,0);
+  arm_joint_handles_[3].setCommand(0,0,0,0,0);
+  arm_joint_handles_[4].setCommand(0,0,0,0,0);
+  arm_joint_handles_[5].setCommand(0,0,0,0,0);
   // arm_joint_handles_[0].setCommand(arm_q_[0],0,500,3,0.0);
   // arm_joint_handles_[1].setCommand(arm_q_[1],0,500,3,0.0);
   // arm_joint_handles_[2].setCommand(arm_q_[2],0,500,3,0.0);

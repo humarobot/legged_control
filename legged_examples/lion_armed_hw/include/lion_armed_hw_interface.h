@@ -96,7 +96,7 @@ private:
   ActuatorController * pController_;
   std::vector<ActuatorController::UnifiedID> arm_uID_array_;
   static bool bExit;
-
+  ActuatorMode mode_;
 
 };
   extern int count,cur1_count,cur2_count,cur3_count,cur4_count,cur5_count,cur6_count;

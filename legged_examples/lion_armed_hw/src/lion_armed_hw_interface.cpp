@@ -210,6 +210,8 @@ bool LionArmedHW::init(ros::NodeHandle& root_nh, ros::NodeHandle& robot_hw_nh)
 }
 
 void LionArmedHW::enableArmMotors(){
+  // mode_= Actuator::Mode_Cur; 
+  mode_ = Actuator::Mode_Profile_Pos;
   //Associate program interrupt signals and call processSignal when you end the program with ctrl-c
   signal(SIGINT,processSignal);
   //Initialize the controller
@@ -226,6 +228,10 @@ void LionArmedHW::enableArmMotors(){
     cout << "MintaSCA:: Enable motors ... " <<endl;
     pController_->enableAllActuators();
     pController_->addParaRequestCallback(paramFeedback);
+    //设置电机模式
+    for(auto actuator:arm_uID_array_)
+      pController_->activateActuatorMode(actuator.actuatorID,mode_);
+    
   }
   else
   {
@@ -247,7 +253,7 @@ void LionArmedHW::read(const ros::Time& time, const ros::Duration& period)
         pController_->requestCVPValue(actuator.actuatorID);
         // pController->setCurrent(actuator.actuatorID,1.0);
     }
-
+    //安全起见设置电机默认指令
     std::vector<std::string> names = hybrid_joint_interface_.getNames();
     for (const auto& name : names)
     {
@@ -257,8 +263,14 @@ void LionArmedHW::read(const ros::Time& time, const ros::Duration& period)
       handle.setKd(0.);
       handle.setKp(0.);
     }
+    if(mode_==Actuator::Mode_Profile_Pos){
+      for(int i=0;i<6;i++){
+        joint_data_[12+i].pos_des_=joint_data_[12+i].pos_;
+      }  
+    }
+
     count++;
-    if(count==500){
+    if(count==500){ //打印数据完整性
       // cout<<"Motor1 current: "<<(float)cur1_count/500.0<<" vel: "<<(float)vel1_count/500.0<<" pos: "<<(float)pos1_count/500.0<<endl;
       // cout<<"Motor2 current: "<<(float)cur2_count/500.0<<" vel: "<<(float)vel2_count/500.0<<" pos: "<<(float)pos2_count/500.0<<endl;
       // cout<<"Motor3 current: "<<(float)cur3_count/500.0<<" vel: "<<(float)vel3_count/500.0<<" pos: "<<(float)pos3_count/500.0<<endl;
@@ -271,7 +283,7 @@ void LionArmedHW::read(const ros::Time& time, const ros::Duration& period)
       pos1_count=pos2_count=pos3_count=pos4_count=pos5_count=pos6_count=0;
     }
   }
-  else{
+  else{ //退出程序时失能电机
     cout << "MintaSCA:: Disable motors ... "<<endl;
     for(auto actuator: arm_uID_array_){
       pController_->setCurrent(actuator.actuatorID,0.0);
@@ -282,6 +294,7 @@ void LionArmedHW::read(const ros::Time& time, const ros::Duration& period)
     this_thread::sleep_for(std::chrono::milliseconds(200));
     bExit=false;
   }
+  //转存关节信息
   for(int i=0;i<6;i++){
     joint_data_[i+12].pos_ = pos[i];
     joint_data_[i+12].vel_ = vel[i];
@@ -325,29 +338,56 @@ void LionArmedHW::read(const ros::Time& time, const ros::Duration& period)
 
 void LionArmedHW::write(const ros::Time& time, const ros::Duration& period)
 {
-  double joint_cur[6];
+  double joint_cur[18];
   for(int i=0;i<6;i++){
-    joint_cur[i] = joint_data_[i+12].ff_+ (joint_data_[i+12].pos_des_ - joint_data_[i+12].pos_)*joint_data_[i+12].kp_
+    joint_cur[i+12] = joint_data_[i+12].ff_+ (joint_data_[i+12].pos_des_ - joint_data_[i+12].pos_)*joint_data_[i+12].kp_
                   +(joint_data_[i+12].vel_des_ - joint_data_[i+12].vel_) * joint_data_[i+12].kd_;
     // if(count==0)
       // cout<<joint_cur[i]<<"  ";
   }
-  if(count%50==0) 
-    // cout<<joint_cur[5]<<endl;
-    cout<<joint_data_[15].pos_des_<<" "<<joint_data_[15].pos_<<" "<<joint_data_[15].kp_<<" "<<joint_data_[15].kd_
-    <<" "<<joint_cur[3]
-    <<" "<<joint_data_[15].ff_ <<endl;
-    cout<<joint_data_[16].pos_des_<<" "<<joint_data_[16].pos_<<" "<<joint_data_[16].kp_<<" "<<joint_data_[16].kd_
-    <<" "<<joint_cur[4]
-    <<" "<<joint_data_[16].ff_ <<endl;
-    cout<<joint_data_[17].pos_des_<<" "<<joint_data_[17].pos_<<" "<<joint_data_[17].kp_<<" "<<joint_data_[17].kd_
-    <<" "<<joint_cur[5]
-    <<" "<<joint_data_[17].ff_ <<endl;
+  //打印信息
+  if(count%50==0) {
+    cout<<"motor 1:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[12].pos_des_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[12].pos_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[12].tau_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[12].vel_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[12]<<endl;
+    cout<<"motor 2:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[13].pos_des_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[13].pos_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[13].tau_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[13].vel_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[13]<<endl;
+    cout<<"motor 3:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[14].pos_des_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[14].pos_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[14].tau_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[14].vel_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[14]<<endl;
+    cout<<"motor 4:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[15].pos_des_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[15].pos_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[15].tau_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[15].vel_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[15]<<endl;
+    cout<<"motor 5:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[16].pos_des_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[16].pos_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[16].tau_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[16].vel_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[16]<<endl;
+    cout<<"motor 6:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[17].pos_des_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[17].pos_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[17].tau_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[17].vel_<<" "
+    <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[17]<<endl;
+  }
+    
     // cout<<endl;
   // pController_->setCurrent((uint8_t)6,joint_cur[6-1]);
+  //发送电机控制指令
   for(auto actuator: arm_uID_array_){
-  //   // cout<<joint_cur[actuator.actuatorID-1]<<"  ";
-    pController_->setCurrent(actuator.actuatorID,joint_cur[actuator.actuatorID-1]);
+    if(mode_==Actuator::Mode_Profile_Pos)
+      // cout<<joint_data_[11+actuator.actuatorID].pos_des_<<" ";
+      pController_->setPosition(actuator.actuatorID,joint_data_[11+actuator.actuatorID].pos_des_);
+    else if(mode_==Actuator::Mode_Cur)
+      pController_->setCurrent(actuator.actuatorID,joint_data_[11+actuator.actuatorID].pos_des_);
   }
   // cout<<endl;
   // for (int i = 0; i < 12; ++i)
