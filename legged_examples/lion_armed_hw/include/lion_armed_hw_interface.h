@@ -97,11 +97,14 @@ private:
   std::vector<ActuatorController::UnifiedID> arm_uID_array_;
   static bool bExit;
   ActuatorMode mode_;
+  double max_cur_=3.0;
+  double joint_up_limit_[6] = {  15., 18., 18.,  18.,  9.,  18.};
+  double joint_low_limit_[6] = {-15.,  0.,  0., -18., -9., -18.};
 
 };
-  extern int count,cur1_count,cur2_count,cur3_count,cur4_count,cur5_count,cur6_count;
-  extern int vel1_count,vel2_count,vel3_count,vel4_count,vel5_count,vel6_count;
-  extern int pos1_count,pos2_count,pos3_count,pos4_count,pos5_count,pos6_count;
+extern int count,cur1_count,cur2_count,cur3_count,cur4_count,cur5_count,cur6_count;
+extern int vel1_count,vel2_count,vel3_count,vel4_count,vel5_count,vel6_count;
+extern int pos1_count,pos2_count,pos3_count,pos4_count,pos5_count,pos6_count;
 extern double cur[6],vel[6],pos[6];
 
 }  // namespace legged

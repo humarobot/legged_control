@@ -339,11 +339,16 @@ void LionArmedHW::read(const ros::Time& time, const ros::Duration& period)
 void LionArmedHW::write(const ros::Time& time, const ros::Duration& period)
 {
   double joint_cur[18];
+  //计算机械臂电流
   for(int i=0;i<6;i++){
     joint_cur[i+12] = joint_data_[i+12].ff_+ (joint_data_[i+12].pos_des_ - joint_data_[i+12].pos_)*joint_data_[i+12].kp_
                   +(joint_data_[i+12].vel_des_ - joint_data_[i+12].vel_) * joint_data_[i+12].kd_;
-    // if(count==0)
-      // cout<<joint_cur[i]<<"  ";
+    //设置电流上下限
+    if(joint_cur[i+12] > max_cur_){
+      joint_cur[i+12] = max_cur_;
+    }else if(joint_cur[i+12] < -max_cur_){
+      joint_cur[i+12] = -max_cur_;
+    }
   }
   //打印信息
   if(count%50==0) {
@@ -378,18 +383,31 @@ void LionArmedHW::write(const ros::Time& time, const ros::Duration& period)
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[17].vel_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[17]<<endl;
   }
-    
-    // cout<<endl;
-  // pController_->setCurrent((uint8_t)6,joint_cur[6-1]);
-  //发送电机控制指令
-  for(auto actuator: arm_uID_array_){
-    if(mode_==Actuator::Mode_Profile_Pos)
-      // cout<<joint_data_[11+actuator.actuatorID].pos_des_<<" ";
-      pController_->setPosition(actuator.actuatorID,joint_data_[11+actuator.actuatorID].pos_des_);
-    else if(mode_==Actuator::Mode_Cur)
-      pController_->setCurrent(actuator.actuatorID,joint_data_[11+actuator.actuatorID].pos_des_);
+  
+  //设置关节角度上下限
+  auto clip = [](double num, double up, double low){
+    if(num > up) num = up;
+    else if(num < low) num = low;
+  };
+  for(int i=0;i<6;i++){
+    clip(joint_data_[12+i].pos_des_, joint_up_limit_[i], joint_low_limit_[i]);
   }
-  // cout<<endl;
+  
+  //发送机械臂电机控制指令
+  //3关节的运动和2 3两个电机都有关系，joint3=motor2+motor3,
+  //joint2=motor2，motor3=joint3-joint2
+  for(auto actuator: arm_uID_array_){
+    if(mode_==Actuator::Mode_Profile_Pos){
+      // cout<<joint_data_[11+actuator.actuatorID].pos_des_<<" ";
+      if(actuator.actuatorID!=3)
+        pController_->setPosition(actuator.actuatorID,joint_data_[11+actuator.actuatorID].pos_des_);
+      else 
+        pController_->setPosition(actuator.actuatorID,joint_data_[11+actuator.actuatorID].pos_des_-joint_data_[10+actuator.actuatorID].pos_des_);
+    }else if(mode_==Actuator::Mode_Cur){
+      pController_->setCurrent(actuator.actuatorID,joint_cur[11+actuator.actuatorID]);
+    }
+  }
+
   // for (int i = 0; i < 12; ++i)
   // {
   //   low_cmd_.motorCmd[i].q = joint_data_[i].pos_des_;
