@@ -98,7 +98,7 @@ private:
   static bool bExit;
   ActuatorMode mode_;
   double max_cur_=3.0;
-  double joint_up_limit_[6] = {  15., 18., 18.,  18.,  9.,  18.};
+  double joint_up_limit_[6] = {  15., 18., 24.,  18.,  9.,  18.};
   double joint_low_limit_[6] = {-15.,  0.,  0., -18., -9., -18.};
 
 };

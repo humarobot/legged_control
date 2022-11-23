@@ -129,16 +129,16 @@ void LeggedController::starting(const ros::Time& time)
 
   mpc_running_ = true;
   
-  // //Arm inverse kinematics
-  // inverseKine();
+  //Arm inverse kinematics
+  inverseKine();
 
-  // ros::NodeHandle nh2;
-  // auto armReferenceCallback = [this](const geometry_msgs::PoseStampedConstPtr& msg) {
-  //   // std::cout<<"callback"<<std::endl;
-  //   // std::cout<<"test"<<std::endl;
-  //   inverseKine(msg);
-  // };
-  // armRefSubscriber_ = nh2.subscribe<geometry_msgs::PoseStamped>("legged_robot_EE_pose", 1, armReferenceCallback);
+  ros::NodeHandle nh2;
+  auto armReferenceCallback = [this](const geometry_msgs::PoseStampedConstPtr& msg) {
+    // std::cout<<"callback"<<std::endl;
+    // std::cout<<"test"<<std::endl;
+    inverseKine(msg);
+  };
+  armRefSubscriber_ = nh2.subscribe<geometry_msgs::PoseStamped>("legged_robot_EE_pose", 1, armReferenceCallback);
   
 }
 
@@ -191,18 +191,19 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
   //   hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 5, 3, torque(j));
   // ARM control
   // impedanceControl();
-  arm_joint_handles_[0].setCommand(0,0,0,0,0);
-  arm_joint_handles_[1].setCommand(0.1,0,0,0,0);
-  arm_joint_handles_[2].setCommand(0.1,0,0,0,0);
-  arm_joint_handles_[3].setCommand(0,0,0,0,0);
-  arm_joint_handles_[4].setCommand(0,0,0,0,0);
-  arm_joint_handles_[5].setCommand(0,0,0,0,0);
-  // arm_joint_handles_[0].setCommand(arm_q_[0],0,500,3,0.0);
-  // arm_joint_handles_[1].setCommand(arm_q_[1],0,500,3,0.0);
-  // arm_joint_handles_[2].setCommand(arm_q_[2],0,500,3,0.0);
-  // arm_joint_handles_[3].setCommand(arm_q_[3],0,120,0,0.0);
-  // arm_joint_handles_[4].setCommand(arm_q_[4],0,120,0,0.0);
-  // arm_joint_handles_[5].setCommand(arm_q_[5],0,120,0,0.0);
+  // arm_joint_handles_[0].setCommand(0,0,0,0,0);
+  // arm_joint_handles_[1].setCommand(0,0,0,0,0);
+  // arm_joint_handles_[2].setCommand(0,0,0,0,0);
+  // arm_joint_handles_[3].setCommand(0,0,0,0,0);
+  // arm_joint_handles_[4].setCommand(0,0,0,0,0);
+  // arm_joint_handles_[5].setCommand(0,0,0,0,0);
+  
+  arm_joint_handles_[0].setCommand(arm_q_[0],0,500,3,0.0);
+  arm_joint_handles_[1].setCommand(arm_q_[1],0,500,3,0.0);
+  arm_joint_handles_[2].setCommand(arm_q_[2],0,500,3,0.0);
+  arm_joint_handles_[3].setCommand(arm_q_[3],0,120,0,0.0);
+  arm_joint_handles_[4].setCommand(arm_q_[4],0,120,0,0.0);
+  arm_joint_handles_[5].setCommand(arm_q_[5],0,120,0,0.0);
   // std::cout<<arm_q_.transpose()<<std::endl;
 
   // Visualization
@@ -361,7 +362,7 @@ void LeggedController::inverseKine(const geometry_msgs::PoseStampedConstPtr& msg
     // std::cout << i << ": error = " << err.transpose() << std::endl;
   }
   if (success){
-      std::cout << "Convergence achieved!" << std::endl;
+      // std::cout << "Convergence achieved!" << std::endl;
       arm_q_=q;
   }
   else{
@@ -374,7 +375,7 @@ void LeggedController::inverseKine(const geometry_msgs::PoseStampedConstPtr& msg
 
 void LeggedController::inverseKine(){
   const int JOINT_ID = 6;
-  const pinocchio::SE3 oMdes(Eigen::Matrix3d::Identity(), Eigen::Vector3d(0., 0., 0.4));
+  const pinocchio::SE3 oMdes(Eigen::Matrix3d::Identity(), Eigen::Vector3d(0.2, 0., 0.4));
 
   Eigen::VectorXd q = pinocchio::neutral(arm_model_);
   const double eps = 1e-4;
@@ -466,7 +467,7 @@ void LeggedController::inverseKineWBC(const Eigen::Vector3d& base_pos){
     // std::cout << i << ": error = " << err.transpose() << std::endl;
   }
   if (success){
-      std::cout << "Convergence achieved!" << std::endl;
+      // std::cout << "Convergence achieved!" << std::endl;
       arm_q_=q;
   }
   else{

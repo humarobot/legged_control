@@ -263,6 +263,7 @@ void LionArmedHW::read(const ros::Time& time, const ros::Duration& period)
       handle.setKd(0.);
       handle.setKp(0.);
     }
+    //设置默认关节角度为当前角度
     if(mode_==Actuator::Mode_Profile_Pos){
       for(int i=0;i<6;i++){
         joint_data_[12+i].pos_des_=joint_data_[12+i].pos_;
@@ -271,12 +272,12 @@ void LionArmedHW::read(const ros::Time& time, const ros::Duration& period)
 
     count++;
     if(count==500){ //打印数据完整性
-      // cout<<"Motor1 current: "<<(float)cur1_count/500.0<<" vel: "<<(float)vel1_count/500.0<<" pos: "<<(float)pos1_count/500.0<<endl;
-      // cout<<"Motor2 current: "<<(float)cur2_count/500.0<<" vel: "<<(float)vel2_count/500.0<<" pos: "<<(float)pos2_count/500.0<<endl;
-      // cout<<"Motor3 current: "<<(float)cur3_count/500.0<<" vel: "<<(float)vel3_count/500.0<<" pos: "<<(float)pos3_count/500.0<<endl;
-      // cout<<"Motor4 current: "<<(float)cur4_count/500.0<<" vel: "<<(float)vel4_count/500.0<<" pos: "<<(float)pos4_count/500.0<<endl;
-      // cout<<"Motor5 current: "<<(float)cur5_count/500.0<<" vel: "<<(float)vel5_count/500.0<<" pos: "<<(float)pos5_count/500.0<<endl;
-      // cout<<"Motor6 current: "<<(float)cur6_count/500.0<<" vel: "<<(float)vel6_count/500.0<<" pos: "<<(float)pos6_count/500.0<<endl;
+      cout<<"Motor1 current: "<<(float)cur1_count/500.0<<" vel: "<<(float)vel1_count/500.0<<" pos: "<<(float)pos1_count/500.0<<endl;
+      cout<<"Motor2 current: "<<(float)cur2_count/500.0<<" vel: "<<(float)vel2_count/500.0<<" pos: "<<(float)pos2_count/500.0<<endl;
+      cout<<"Motor3 current: "<<(float)cur3_count/500.0<<" vel: "<<(float)vel3_count/500.0<<" pos: "<<(float)pos3_count/500.0<<endl;
+      cout<<"Motor4 current: "<<(float)cur4_count/500.0<<" vel: "<<(float)vel4_count/500.0<<" pos: "<<(float)pos4_count/500.0<<endl;
+      cout<<"Motor5 current: "<<(float)cur5_count/500.0<<" vel: "<<(float)vel5_count/500.0<<" pos: "<<(float)pos5_count/500.0<<endl;
+      cout<<"Motor6 current: "<<(float)cur6_count/500.0<<" vel: "<<(float)vel6_count/500.0<<" pos: "<<(float)pos6_count/500.0<<endl;
       count=0;
       cur1_count=cur2_count=cur3_count=cur4_count=cur5_count=cur6_count=0;
       vel1_count=vel2_count=vel3_count=vel4_count=vel5_count=vel6_count=0;
@@ -295,11 +296,14 @@ void LionArmedHW::read(const ros::Time& time, const ros::Duration& period)
     bExit=false;
   }
   //转存关节信息
+  //读取信息时，直接把电机数据转成关节数据,转换成弧度
   for(int i=0;i<6;i++){
-    joint_data_[i+12].pos_ = pos[i];
-    joint_data_[i+12].vel_ = vel[i];
+    joint_data_[i+12].pos_ = pos[i]/18.0*3.1415927;
+    joint_data_[i+12].vel_ = vel[i]/18.0*3.1415927;
     joint_data_[i+12].tau_ = cur[i];
   }
+  joint_data_[14].pos_ = (pos[1]+pos[2])/18.0*3.1415927;
+  joint_data_[14].vel_ = (vel[1]+vel[2])/18.0*3.1415927;
   // if(count==0)
   //   cout<<joint_data_[17].pos_<<" "<<joint_data_[17].vel_<<" "<<joint_data_[17].tau_<<endl;
   // for (int i = 0; i < 12; ++i)
@@ -351,33 +355,33 @@ void LionArmedHW::write(const ros::Time& time, const ros::Duration& period)
     }
   }
   //打印信息
-  if(count%50==0) {
-    cout<<"motor 1:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[12].pos_des_<<" "
+  if(count%500==0) {
+    cout<<"joint1:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[12].pos_des_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[12].pos_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[12].tau_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[12].vel_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[12]<<endl;
-    cout<<"motor 2:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[13].pos_des_<<" "
+    cout<<"joint2:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[13].pos_des_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[13].pos_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[13].tau_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[13].vel_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[13]<<endl;
-    cout<<"motor 3:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[14].pos_des_<<" "
+    cout<<"joint3:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[14].pos_des_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[14].pos_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[14].tau_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[14].vel_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[14]<<endl;
-    cout<<"motor 4:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[15].pos_des_<<" "
+    cout<<"joint4:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[15].pos_des_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[15].pos_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[15].tau_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[15].vel_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[15]<<endl;
-    cout<<"motor 5:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[16].pos_des_<<" "
+    cout<<"joint5:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[16].pos_des_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[16].pos_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[16].tau_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[16].vel_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[16]<<endl;
-    cout<<"motor 6:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[17].pos_des_<<" "
+    cout<<"joint6:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[17].pos_des_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[17].pos_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[17].tau_<<" "
     <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[17].vel_<<" "
@@ -394,15 +398,15 @@ void LionArmedHW::write(const ros::Time& time, const ros::Duration& period)
   }
   
   //发送机械臂电机控制指令
-  //3关节的运动和2 3两个电机都有关系，joint3=motor2+motor3,
-  //joint2=motor2，motor3=joint3-joint2
+  //3关节的运动和2 3两个电机都有关系，joint3=motor2+motor3, joint2=motor2，motor3=joint3-joint2
   for(auto actuator: arm_uID_array_){
     if(mode_==Actuator::Mode_Profile_Pos){
       // cout<<joint_data_[11+actuator.actuatorID].pos_des_<<" ";
       if(actuator.actuatorID!=3)
-        pController_->setPosition(actuator.actuatorID,joint_data_[11+actuator.actuatorID].pos_des_);
+        pController_->setPosition(actuator.actuatorID,joint_data_[11+actuator.actuatorID].pos_des_/3.1415927*18.);
       else 
-        pController_->setPosition(actuator.actuatorID,joint_data_[11+actuator.actuatorID].pos_des_-joint_data_[10+actuator.actuatorID].pos_des_);
+        pController_->setPosition(actuator.actuatorID,
+        (joint_data_[11+actuator.actuatorID].pos_des_-joint_data_[10+actuator.actuatorID].pos_des_)/3.1415927*18.);
     }else if(mode_==Actuator::Mode_Cur){
       pController_->setCurrent(actuator.actuatorID,joint_cur[11+actuator.actuatorID]);
     }
