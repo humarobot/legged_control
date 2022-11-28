@@ -6,14 +6,14 @@
             <robotNamespace>/</robotNamespace>
             <robotParam>legged_robot_description</robotParam>
             <robotSimType>legged_gazebo/QuadHWSim</robotSimType>
-            <!-- <controlPeriod>0.002</controlPeriod> -->
+            <!-- <controlPeriod>0.005</controlPeriod> -->
         </plugin>
     </gazebo>
 
     <gazebo>
         <plugin name="p3d_base_controller" filename="libgazebo_ros_p3d.so">
             <alwaysOn>true</alwaysOn>
-            <updateRate>1000.0</updateRate>
+            <!-- <updateRate>500.0</updateRate> -->
             <bodyName>base</bodyName>
             <topicName>ground_truth/state</topicName>
             <gaussianNoise>0</gaussianNoise>

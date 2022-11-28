@@ -17,7 +17,7 @@
   <gazebo>
     <plugin filename="libgazebo_ros_p3d.so" name="p3d_base_controller">
       <alwaysOn>true</alwaysOn>
-      <updateRate>1000.0</updateRate>
+      <!-- <updateRate>500.0</updateRate> -->
       <bodyName>base</bodyName>
       <topicName>ground_truth/state</topicName>
       <gaussianNoise>0</gaussianNoise>
@@ -56,8 +56,8 @@
     <self_collide>1</self_collide>
   </gazebo>
   <gazebo reference="LF_FOOT">
-    <mu1>0.6</mu1>
-    <mu2>0.6</mu2>
+    <mu1>0.9</mu1>
+    <mu2>0.9</mu2>
     <self_collide>1</self_collide>
     <material>Gazebo/DarkGrey</material>
     <kp value="1000000.0"/>
@@ -83,8 +83,8 @@
     <self_collide>1</self_collide>
   </gazebo>
   <gazebo reference="RF_FOOT">
-    <mu1>0.6</mu1>
-    <mu2>0.6</mu2>
+    <mu1>0.9</mu1>
+    <mu2>0.9</mu2>
     <self_collide>1</self_collide>
     <material>Gazebo/DarkGrey</material>
     <kp value="1000000.0"/>
@@ -110,8 +110,8 @@
     <self_collide>1</self_collide>
   </gazebo>
   <gazebo reference="LH_FOOT">
-    <mu1>0.6</mu1>
-    <mu2>0.6</mu2>
+    <mu1>0.9</mu1>
+    <mu2>0.9</mu2>
     <self_collide>1</self_collide>
     <material>Gazebo/DarkGrey</material>
     <kp value="1000000.0"/>
@@ -137,8 +137,8 @@
     <self_collide>1</self_collide>
   </gazebo>
   <gazebo reference="RH_FOOT">
-    <mu1>0.6</mu1>
-    <mu2>0.6</mu2>
+    <mu1>0.9</mu1>
+    <mu2>0.9</mu2>
     <self_collide>1</self_collide>
     <material>Gazebo/DarkGrey</material>
     <kp value="1000000.0"/>
@@ -284,7 +284,7 @@
       </material>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0.002"/>
       <geometry>
         <sphere radius="0.02"/>
       </geometry>
@@ -411,7 +411,7 @@
       </material>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0.002"/>
       <geometry>
         <sphere radius="0.02"/>
       </geometry>
@@ -537,7 +537,7 @@
       </material>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0.002"/>
       <geometry>
         <sphere radius="0.02"/>
       </geometry>
@@ -663,7 +663,7 @@
       </material>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0.002"/>
       <geometry>
         <sphere radius="0.02"/>
       </geometry>
@@ -824,4 +824,16 @@
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
+  <gazebo reference="JointHL_foot">
+    <disableFixedJointLumping>true</disableFixedJointLumping>
+  </gazebo>
+  <gazebo reference="JointHR_foot">
+    <disableFixedJointLumping>true</disableFixedJointLumping>
+  </gazebo>
+  <gazebo reference="JointFL_foot">
+    <disableFixedJointLumping>true</disableFixedJointLumping>
+  </gazebo>
+  <gazebo reference="JointFR_foot">
+    <disableFixedJointLumping>true</disableFixedJointLumping>
+  </gazebo>
 </robot>

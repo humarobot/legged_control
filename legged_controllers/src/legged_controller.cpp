@@ -64,13 +64,14 @@ bool LeggedController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHand
   for (const auto& joint_name : joint_names)
     hybrid_joint_handles_.push_back(hybrid_joint_interface->getHandle(joint_name));
   //Arm handles
-  std::vector<std::string> arm_joint_names{"joint1", "joint2", "joint3", "joint4", "joint5", "joint6"};
-  for (const auto& joint_name : arm_joint_names)
-    arm_joint_handles_.push_back(hybrid_joint_interface->getHandle(joint_name));
+  // std::vector<std::string> arm_joint_names{"joint1", "joint2", "joint3", "joint4", "joint5", "joint6"};
+  // for (const auto& joint_name : arm_joint_names)
+  //   arm_joint_handles_.push_back(hybrid_joint_interface->getHandle(joint_name));
 
   ContactSensorInterface* contact_interface = robot_hw->get<ContactSensorInterface>();
   std::vector<ContactSensorHandle> contact_handles;
-  for (auto& name : legged_interface_->modelSettings().contactNames3DoF)
+  std::vector<std::string> foot_names{"LF_FOOT", "RF_FOOT", "LH_FOOT", "RH_FOOT"};
+  for (auto& name : foot_names)
     contact_handles.push_back(contact_interface->getHandle(name));
 
   // State estimation
@@ -187,30 +188,24 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
   }
 
   
-  // for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j)
-  //   hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 5, 3, torque(j));
+  for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j)
+    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 5, 3, torque(j));
   // ARM control
   // impedanceControl();
-  // arm_joint_handles_[0].setCommand(0,0,0,0,0);
-  // arm_joint_handles_[1].setCommand(0,0,0,0,0);
-  // arm_joint_handles_[2].setCommand(0,0,0,0,0);
-  // arm_joint_handles_[3].setCommand(0,0,0,0,0);
-  // arm_joint_handles_[4].setCommand(0,0,0,0,0);
-  // arm_joint_handles_[5].setCommand(0,0,0,0,0);
   
-  arm_joint_handles_[0].setCommand(arm_q_[0],0,500,3,0.0);
-  arm_joint_handles_[1].setCommand(arm_q_[1],0,500,3,0.0);
-  arm_joint_handles_[2].setCommand(arm_q_[2],0,500,3,0.0);
-  arm_joint_handles_[3].setCommand(arm_q_[3],0,120,0,0.0);
-  arm_joint_handles_[4].setCommand(arm_q_[4],0,120,0,0.0);
-  arm_joint_handles_[5].setCommand(arm_q_[5],0,120,0,0.0);
+  // arm_joint_handles_[0].setCommand(arm_q_[0],0,500,3,0.0);
+  // arm_joint_handles_[1].setCommand(arm_q_[1],0,500,3,0.0);
+  // arm_joint_handles_[2].setCommand(arm_q_[2],0,500,3,0.0);
+  // arm_joint_handles_[3].setCommand(arm_q_[3],0,120,0,0.0);
+  // arm_joint_handles_[4].setCommand(arm_q_[4],0,120,0,0.0);
+  // arm_joint_handles_[5].setCommand(arm_q_[5],0,120,0,0.0);
   // std::cout<<arm_q_.transpose()<<std::endl;
 
   // Visualization
   // visualizer_->update(current_observation_, mpc_mrt_interface_->getPolicy(), mpc_mrt_interface_->getCommand());
 
   // Publish the observation. Only needed for the command interface
-  // observation_publisher_.publish(ros_msg_conversions::createObservationMsg(current_observation_));
+  observation_publisher_.publish(ros_msg_conversions::createObservationMsg(current_observation_));
 }
 
 LeggedController::~LeggedController()

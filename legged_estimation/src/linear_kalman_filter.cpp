@@ -135,6 +135,7 @@ vector_t KalmanFilterEstimate::update(const ros::Time& time, const ros::Duration
     int r_index2 = 12 + i1;
     int r_index3 = 24 + i;
     bool is_contact = contact_sensor_handles_[i].isContact();
+    std::cout<<is_contact<<" ";
 
     scalar_t high_suspect_number(100);
     q.block(q_index, q_index, 3, 3) = (is_contact ? 1. : high_suspect_number) * q.block(q_index, q_index, 3, 3);
@@ -146,6 +147,7 @@ vector_t KalmanFilterEstimate::update(const ros::Time& time, const ros::Duration
     ps_.segment(3 * i, 3)[2] += foot_radius;
     vs_.segment(3 * i, 3) = -1. * ee_vel[i];
   }
+  std::cout<<std::endl;
   Eigen::Matrix<scalar_t, 3, 1> g(0, 0, -9.81);
   Eigen::Matrix<scalar_t, 3, 1> imu_accel(imu_sensor_handle_.getLinearAcceleration()[0],
                                           imu_sensor_handle_.getLinearAcceleration()[1],

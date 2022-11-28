@@ -557,4 +557,17 @@
         <xacro:leg_transmission prefix="RH"/>
         <xacro:leg_transmission prefix="LH"/>
 
+        <gazebo reference="JointHL_foot">
+          <disableFixedJointLumping>true</disableFixedJointLumping>
+        </gazebo>
+        <gazebo reference="JointHR_foot">
+          <disableFixedJointLumping>true</disableFixedJointLumping>
+        </gazebo>
+        <gazebo reference="JointFL_foot">
+          <disableFixedJointLumping>true</disableFixedJointLumping>
+        </gazebo>
+        <gazebo reference="JointFR_foot">
+          <disableFixedJointLumping>true</disableFixedJointLumping>
+        </gazebo>
+
 </robot>

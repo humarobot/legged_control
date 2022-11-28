@@ -7,7 +7,7 @@
     <!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
       <arg name="world_name" value="$(find lion_description)/world.world"/>
-      <arg name="paused" default = "true"/>
+      <arg name="paused" default = "false"/>
    </include>
 
     <!-- push robot_description to factory and spawn robot in gazebo -->
