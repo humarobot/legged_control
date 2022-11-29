@@ -44,6 +44,7 @@
 
 #include <ros/ros.h>
 #include <controller_manager/controller_manager.h>
+#include "legged_hw/CubeMarsDriver.h"
 
 namespace legged
 {
@@ -80,8 +81,8 @@ private:
   double cycle_time_error_threshold_{};
 
   // Timing
-  std::thread loop_thread_;
-  std::atomic_bool loop_running_;
+  std::thread loop_thread_,can_thread_;
+  std::atomic_bool loop_running_,can_running_;
   double loop_hz_{};
   ros::Duration elapsed_time_;
   clock::time_point last_time_;
@@ -96,5 +97,6 @@ private:
 
   // Abstract Hardware Interface for your robot
   std::shared_ptr<LeggedHW> hardware_interface_;
+  CubeMarsDriver can_driver_{hardware_interface_->joint_data_};
 };
 }  // namespace legged

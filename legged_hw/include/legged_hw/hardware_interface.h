@@ -19,9 +19,27 @@
 #include <hardware_interface/imu_sensor_interface.h>
 #include <legged_common/hardware_interface/hybrid_joint_interface.h>
 #include <legged_common/hardware_interface/contact_sensor_interface.h>
+#include <atomic>
 
 namespace legged
 {
+
+struct LionMotorData
+{
+  double pos_, vel_, tau_;                   // state
+  double pos_des_, vel_des_, kp_, kd_, ff_;  // command
+};
+
+struct LionImuData
+{
+  double ori[4];
+  double ori_cov[9];
+  double angular_vel[3];
+  double angular_vel_cov[9];
+  double linear_acc[3];
+  double linear_acc_cov[9];
+};
+
 class LeggedHW : public hardware_interface::RobotHW
 {
 public:
@@ -36,6 +54,8 @@ public:
    * @return True when init successful, False when failed.
    */
   bool init(ros::NodeHandle& root_nh, ros::NodeHandle& robot_hw_nh) override;
+
+  LionMotorData joint_data_[18]{};
 
 protected:
   // Interface

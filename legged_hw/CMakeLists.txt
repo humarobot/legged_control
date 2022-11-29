@@ -27,6 +27,7 @@ catkin_package(
         legged_common
         controller_manager
         urdf
+
 )
 
 ###########
@@ -41,6 +42,7 @@ include_directories(
 add_library(${PROJECT_NAME}
         src/hardware_interface.cpp
         src/control_loop.cpp
+        src/CubeMarsDriver.cpp
         )
 
 target_link_libraries(${PROJECT_NAME}

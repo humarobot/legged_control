@@ -42,6 +42,18 @@ LeggedHWLoop::LeggedHWLoop(ros::NodeHandle& nh, std::shared_ptr<LeggedHW> hardwa
   if (pthread_setschedparam(loop_thread_.native_handle(), SCHED_FIFO, &sched) != 0)
     ROS_WARN("Failed to set threads priority (one possible reason could be that the user and the group permissions "
              "are not set properly.).\n");
+
+  can_driver_.Init();
+  can_thread_ = std::thread([&]() {
+    while (can_running_)
+    {
+      if (can_running_){
+        can_driver_.Run();
+        std::cout<<"can running "<<std::endl;
+      }
+
+    }
+  });
 }
 
 void LeggedHWLoop::update()
@@ -83,8 +95,11 @@ void LeggedHWLoop::update()
 LeggedHWLoop::~LeggedHWLoop()
 {
   loop_running_ = false;
+  can_running_ = false;
   if (loop_thread_.joinable())
     loop_thread_.join();
+  if (can_thread_.joinable())
+    can_thread_.join();
 }
 
 }  // namespace legged
