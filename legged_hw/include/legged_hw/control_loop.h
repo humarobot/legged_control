@@ -82,8 +82,8 @@ private:
 
   // Timing
   std::thread loop_thread_,can_thread_;
-  std::atomic_bool loop_running_,can_running_;
-  double loop_hz_{};
+  std::atomic_bool loop_running_{true},can_running_{true};
+  double loop_hz_{500};
   ros::Duration elapsed_time_;
   clock::time_point last_time_;
 
@@ -97,6 +97,6 @@ private:
 
   // Abstract Hardware Interface for your robot
   std::shared_ptr<LeggedHW> hardware_interface_;
-  CubeMarsDriver can_driver_{hardware_interface_->joint_data_};
+  CubeMarsDriver can_driver_{hardware_interface_->joint_data_,loop_hz_};
 };
 }  // namespace legged

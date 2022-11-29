@@ -24,6 +24,7 @@
 #include <thread>
 #include "hardware_interface.h"
 
+
 #define P_MIN -12.5
 #define P_MAX 12.5
 #define	V_MIN -30
@@ -42,11 +43,21 @@
  * 2 缓慢运动过程中电机抖动 可能是没有前馈，轨迹规划不合理
  */
 
+namespace legged{
+
+using namespace std::chrono;
+using clock = high_resolution_clock;
+
 class CubeMarsDriver {
 public:
-    CubeMarsDriver(legged::LionMotorData* joint_data):joint_data_(joint_data){}
+    CubeMarsDriver(legged::LionMotorData* joint_data,double loop_hz):
+        loop_hz_(loop_hz),_loop_rate(loop_hz),joint_data_(joint_data){}
     void Init();
     void Run();
+    void Update();
+    ~CubeMarsDriver(){
+        CleanUp();
+    }
 private:
     
     void InitCan();
@@ -78,7 +89,7 @@ private:
         else if(x > x_max) x = x_max;
         return (int) ((x- x_min)*((float)((1<<bits)/span)));
     }
-
+    double loop_hz_;
     ros::Rate _loop_rate{500};
 
 
@@ -96,7 +107,11 @@ private:
                         _frame_enable,_frame_disable,_frame_set0;
 
     legged::LionMotorData* joint_data_;
-
+    //Timing
+    ros::Duration elapsed_time_;
+    clock::time_point last_time_;
 };
+
+}
 
 #endif

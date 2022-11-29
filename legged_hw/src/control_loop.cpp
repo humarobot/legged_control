@@ -2,7 +2,7 @@
 //
 // Created by qiayuan on 1/24/22.
 //
-#include "legged_hw//control_loop.h"
+#include "legged_hw/control_loop.h"
 
 namespace legged
 {
@@ -48,8 +48,7 @@ LeggedHWLoop::LeggedHWLoop(ros::NodeHandle& nh, std::shared_ptr<LeggedHW> hardwa
     while (can_running_)
     {
       if (can_running_){
-        can_driver_.Run();
-        std::cout<<"can running "<<std::endl;
+        can_driver_.Update();
       }
 
     }

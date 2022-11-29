@@ -1,17 +1,22 @@
 #include "legged_hw/CubeMarsDriver.h"
 
+
+namespace legged{
+
 void CubeMarsDriver::Init()
 {
-	
+	std::cout<<"CubeMarsMotors: Can initializing ..."<<std::endl;
 	// CAN INIT
 	InitCan();
 	InitSpecialFrames();
 	can_size = sizeof(struct can_frame);
 	// printf("can size is: %d \n",(int)can_size);
-
+    std::cout<<"CubeMarsMotors: Motors enabling ..."<<std::endl;
 	// Motor Enable
 	EnableMotors();
 	ZeroCheck();
+
+    last_time_ = clock::now();
 	
 }
 
@@ -19,18 +24,43 @@ void CubeMarsDriver::Run()
 {
 	while(ros::ok()){
 		_index++;
-		if(_index==500){
+		if(_index==loop_hz_){
 			_index=0;
 			for(int i=0;i<12;i++) _frame_num[i]=0;
 		} 
 		StatisticPrinter(_index);
 
-		CanSendRecOnce();
+		// CanSendRecOnce();
+
 		ros::spinOnce();
 		_loop_rate.sleep();
 	}
 	//关闭程序时
 	CleanUp();
+}
+
+void CubeMarsDriver::Update(){
+    const auto current_time = clock::now();
+    // Compute desired duration rounded to clock decimation
+    const duration<double> desired_duration(1.0 / loop_hz_);
+
+    // Get change in time
+    duration<double> time_span = duration_cast<duration<double>>(current_time - last_time_);
+    elapsed_time_ = ros::Duration(time_span.count());
+    last_time_ = current_time;
+
+    //Check Data integrity
+    _index++;
+    if(_index==loop_hz_){
+        _index=0;
+        for(int i=0;i<12;i++) _frame_num[i]=0;
+    } 
+    StatisticPrinter(_index);
+    //TransReceive
+    CanSendRecOnce();
+    // Sleep
+    const auto sleep_till = current_time + duration_cast<clock::duration>(desired_duration);
+    std::this_thread::sleep_until(sleep_till);
 }
 
 void CubeMarsDriver::InitCan()
@@ -79,7 +109,7 @@ void CubeMarsDriver::InitCan()
 		printf("setsockopt0 fail\n");
 	if (ret1 != 0)
 		printf("setsockopt1 fail\n");
-	printf("CAN init done!!!\n");
+	printf("CubeMarsMotors: CAN init done!!!\n");
 	
 }
 
@@ -350,4 +380,5 @@ void CubeMarsDriver::ZeroCheck(){
 	std::cout<<std::endl;
 
 
+}
 }
