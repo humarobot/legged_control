@@ -341,7 +341,7 @@ void CubeMarsDriver::RawToMsg(int motor_id,struct can_frame& frame){
 
 void CubeMarsDriver::MsgToRaw(int i,struct can_frame& frame){
 	uint p_int=float_to_uint((joint_data_[i-1].pos_des_ + _motors_offset[i-1])*_motors_direction[i-1],P_MIN,P_MAX,16);
-	uint v_int=float_to_uint(joint_data_[i-1].pos_des_ * _motors_direction[i-1],V_MIN,V_MAX,12);
+	uint v_int=float_to_uint(joint_data_[i-1].vel_des_ * _motors_direction[i-1],V_MIN,V_MAX,12);
 	// std::cout<<_motors_control.velocity[8]<<_motors_control.kd[8]<<std::endl;
 	uint kp_int=float_to_uint(joint_data_[i-1].kp_,Kp_MIN,Kp_MAX,12);
 	uint kd_int=float_to_uint(joint_data_[i-1].kd_,Kd_MIN,Kd_MAX,12);
@@ -371,6 +371,7 @@ void CubeMarsDriver::StatisticPrinter(int index){
 }
 
 void CubeMarsDriver::ZeroCheck(){
+	std::cout<<"CubeMarsMotors: Current pos ";
 	for(int i=0;i<12;i++){
 		std::cout<<joint_data_[i].pos_<<"  ";
 		double delta = joint_data_[i].pos_-_init_joints_pos[i];

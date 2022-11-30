@@ -93,6 +93,7 @@ void LeggedHWLoop::update()
 
 LeggedHWLoop::~LeggedHWLoop()
 {
+  std::cout<<"!!!!!!!!!!!!!!!!!!!!!!!destruct leggedHWLoop"<<std::endl;
   loop_running_ = false;
   can_running_ = false;
   if (loop_thread_.joinable())
