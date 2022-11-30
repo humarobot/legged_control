@@ -8,6 +8,7 @@
 #include <signal.h>
 #include <thread>
 #include <chrono>
+#include "sensor_msgs/Imu.h"
 
 
 namespace legged
@@ -87,6 +88,10 @@ private:
   double max_cur_=3.0;
   double joint_up_limit_[6] = {  15., 18., 24.,  18.,  9.,  18.};
   double joint_low_limit_[6] = {-15.,  0.,  0., -18., -9., -18.};
+
+  //IMU
+  ros::Subscriber sub_;
+  std::mutex imu_mutex_;
 
 };
 

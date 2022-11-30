@@ -192,6 +192,21 @@ bool LionArmedHW::init(ros::NodeHandle& root_nh, ros::NodeHandle& robot_hw_nh)
   //Arm motor enable
   enableArmMotors();
   count = 0;
+  //IMU
+  auto imu_callback = [this](const sensor_msgs::Imu::ConstPtr& msg) {
+    std::lock_guard<std::mutex> lock(imu_mutex_);
+    imu_data_.ori[0] = msg->orientation.x;
+    imu_data_.ori[1] = msg->orientation.y;
+    imu_data_.ori[2] = msg->orientation.z;
+    imu_data_.ori[3] = msg->orientation.w;
+    imu_data_.angular_vel[0] = msg->angular_velocity.x;
+    imu_data_.angular_vel[1] = msg->angular_velocity.y;
+    imu_data_.angular_vel[2] = msg->angular_velocity.z;
+    imu_data_.linear_acc[0] = msg->linear_acceleration.x;
+    imu_data_.linear_acc[1] = msg->linear_acceleration.y;
+    imu_data_.linear_acc[2] = msg->linear_acceleration.z;
+    };
+  sub_ = root_nh.subscribe<sensor_msgs::Imu>("lion_imu",1,imu_callback);
 //   udp_ = std::make_shared<UNITREE_LEGGED_SDK::UDP>(UNITREE_LEGGED_SDK::LOWLEVEL);
 //   udp_->InitCmdData(low_cmd_);
 

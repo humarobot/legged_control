@@ -103,20 +103,20 @@ void QuadHWSim::readSim(ros::Time time, ros::Duration period)
   }
 
   // Contact Sensor
-  for (auto& state : name2contact_)
-    state.second = false;
-  for (const auto& contact : contact_manager_->GetContacts())
-  {
-    if (static_cast<uint32_t>(contact->time.sec) != time.sec ||
-        static_cast<uint32_t>(contact->time.nsec) != (time - period).nsec)
-      continue;
-    std::string link_name = contact->collision1->GetLink()->GetName();
-    if (name2contact_.find(link_name) != name2contact_.end())
-      name2contact_[link_name] = true;
-    link_name = contact->collision2->GetLink()->GetName();
-    if (name2contact_.find(link_name) != name2contact_.end())
-      name2contact_[link_name] = true;
-  }
+  // for (auto& state : name2contact_)
+  //   state.second = false;
+  // for (const auto& contact : contact_manager_->GetContacts())
+  // {
+  //   if (static_cast<uint32_t>(contact->time.sec) != time.sec ||
+  //       static_cast<uint32_t>(contact->time.nsec) != (time - period).nsec)
+  //     continue;
+  //   std::string link_name = contact->collision1->GetLink()->GetName();
+  //   if (name2contact_.find(link_name) != name2contact_.end())
+  //     name2contact_[link_name] = true;
+  //   link_name = contact->collision2->GetLink()->GetName();
+  //   if (name2contact_.find(link_name) != name2contact_.end())
+  //     name2contact_[link_name] = true;
+  // }
 
   // Set cmd to zero to avoid crazy soft limit oscillation when not controller loaded
   for (auto& cmd : joint_effort_command_)

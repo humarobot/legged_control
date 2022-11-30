@@ -172,26 +172,26 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
 
   // std::cout<<optimized_input<<std::endl;
 
-  // vector_t x = wbc_->update(optimized_state, optimized_input, measured_rbd_state, planned_mode);
+  vector_t x = wbc_->update(optimized_state, optimized_input, measured_rbd_state, planned_mode);
 
   
-  // vector_t torque = x.tail(12);
+  vector_t torque = x.tail(12);
 
-  // vector_t pos_des = centroidal_model::getJointAngles(optimized_state, legged_interface_->getCentroidalModelInfo());
-  // vector_t vel_des = centroidal_model::getJointVelocities(optimized_input, legged_interface_->getCentroidalModelInfo());
+  vector_t pos_des = centroidal_model::getJointAngles(optimized_state, legged_interface_->getCentroidalModelInfo());
+  vector_t vel_des = centroidal_model::getJointVelocities(optimized_input, legged_interface_->getCentroidalModelInfo());
 
-  // // Safety check, if failed, stop the controller
-  // if (!safety_checker_->check(current_observation_, optimized_state, optimized_input))
-  // {
-  //   ROS_ERROR_STREAM("[Legged Controller] Safety check failed, stopping the controller.");
-  //   stopRequest(time);
-  // }
+  // Safety check, if failed, stop the controller
+  if (!safety_checker_->check(current_observation_, optimized_state, optimized_input))
+  {
+    ROS_ERROR_STREAM("[Legged Controller] Safety check failed, stopping the controller.");
+    stopRequest(time);
+  }
 
   
   // for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j)
   //   hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 5, 3, torque(j));
   // std::cout<<"motor 0 pos: "<<hybrid_joint_handles_[0].getPosition()<<std::endl;
-  hybrid_joint_handles_[0].setCommand(0., 0., 5, 3, 0.);
+  // hybrid_joint_handles_[0].setCommand(0., 0., 5, 3, 0.);
 
   // ARM control
   // impedanceControl();
