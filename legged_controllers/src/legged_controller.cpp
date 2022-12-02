@@ -188,10 +188,14 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
   }
 
   
-  // for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j)
-  //   hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 5, 3, torque(j));
-  // std::cout<<"motor 0 pos: "<<hybrid_joint_handles_[0].getPosition()<<std::endl;
-  // hybrid_joint_handles_[0].setCommand(0., 0., 5, 3, 0.);
+  for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j){
+    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 5, 3, 0.8*torque(j));
+    
+    // std::cout<<vel_des(j)<<" ";
+  }
+  // std::cout<<std::endl;
+    
+  // hybrid_joint_handles_[1].setCommand(0., 0., 0, 0, 1.);
 
   // ARM control
   // impedanceControl();

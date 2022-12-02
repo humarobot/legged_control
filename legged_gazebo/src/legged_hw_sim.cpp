@@ -96,27 +96,27 @@ void QuadHWSim::readSim(ros::Time time, ros::Duration period)
     imu.angular_vel[2] = rate.Z();
 
     ignition::math::Vector3d gravity = { 0., 0., -9.81 };
-    ignition::math::Vector3d accel = imu.link_prt->RelativeLinearAccel() - pose.Rot().RotateVectorReverse(gravity);
+    ignition::math::Vector3d accel = imu.link_prt->RelativeLinearAccel() + pose.Rot().RotateVector(gravity);
     imu.linear_acc[0] = accel.X();
     imu.linear_acc[1] = accel.Y();
     imu.linear_acc[2] = accel.Z();
   }
 
   // Contact Sensor
-  // for (auto& state : name2contact_)
-  //   state.second = false;
-  // for (const auto& contact : contact_manager_->GetContacts())
-  // {
-  //   if (static_cast<uint32_t>(contact->time.sec) != time.sec ||
-  //       static_cast<uint32_t>(contact->time.nsec) != (time - period).nsec)
-  //     continue;
-  //   std::string link_name = contact->collision1->GetLink()->GetName();
-  //   if (name2contact_.find(link_name) != name2contact_.end())
-  //     name2contact_[link_name] = true;
-  //   link_name = contact->collision2->GetLink()->GetName();
-  //   if (name2contact_.find(link_name) != name2contact_.end())
-  //     name2contact_[link_name] = true;
-  // }
+  for (auto& state : name2contact_)
+    state.second = false;
+  for (const auto& contact : contact_manager_->GetContacts())
+  {
+    if (static_cast<uint32_t>(contact->time.sec) != time.sec ||
+        static_cast<uint32_t>(contact->time.nsec) != (time - period).nsec)
+      continue;
+    std::string link_name = contact->collision1->GetLink()->GetName();
+    if (name2contact_.find(link_name) != name2contact_.end())
+      name2contact_[link_name] = true;
+    link_name = contact->collision2->GetLink()->GetName();
+    if (name2contact_.find(link_name) != name2contact_.end())
+      name2contact_[link_name] = true;
+  }
 
   // Set cmd to zero to avoid crazy soft limit oscillation when not controller loaded
   for (auto& cmd : joint_effort_command_)

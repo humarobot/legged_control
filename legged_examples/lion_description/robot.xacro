@@ -14,6 +14,7 @@
 
 
         <!--Robot Model*******************************************************************************************-->
+        <!-- <link name="world"/> -->
         <link name="base">
           <inertial>
             <origin rpy="0 0 0" xyz="-0.000638750070817345 -0.00672058356158241 -0.00556735378698432"/>
@@ -36,6 +37,10 @@
             </geometry>
           </collision>
         </link>
+        <!-- <joint name="base_to_world" type="fixed">
+          <parent link="world"/>
+          <child link="base"/>
+        </joint> -->
         <link name="RF_hip">
           <inertial>
             <origin rpy="0 0 0" xyz="-0.0050797 -0.047183 4.172E-05"/>

@@ -135,6 +135,7 @@ vector_t KalmanFilterEstimate::update(const ros::Time& time, const ros::Duration
     int r_index2 = 12 + i1;
     int r_index3 = 24 + i;
     bool is_contact = contact_sensor_handles_[i].isContact();
+    // bool is_contact = true;
     // std::cout<<is_contact<<" ";
 
     scalar_t high_suspect_number(100);
@@ -152,7 +153,8 @@ vector_t KalmanFilterEstimate::update(const ros::Time& time, const ros::Duration
   Eigen::Matrix<scalar_t, 3, 1> imu_accel(imu_sensor_handle_.getLinearAcceleration()[0],
                                           imu_sensor_handle_.getLinearAcceleration()[1],
                                           imu_sensor_handle_.getLinearAcceleration()[2]);
-  Eigen::Matrix<scalar_t, 3, 1> accel = getRotationMatrixFromZyxEulerAngles(quatToZyx(quat)) * imu_accel + g;
+  // std::cout<<imu_accel.transpose()<<std::endl;
+  Eigen::Matrix<scalar_t, 3, 1> accel = getRotationMatrixFromZyxEulerAngles(quatToZyx(quat)) * imu_accel - g;
   Eigen::Matrix<scalar_t, 4, 1> pzs = Eigen::Matrix<scalar_t, 4, 1>::Zero();
 
   Eigen::Matrix<scalar_t, 28, 1> y;
