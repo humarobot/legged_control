@@ -8,6 +8,7 @@
 
 #include <ocs2_pinocchio_interface/PinocchioEndEffectorKinematics.h>
 #include <ocs2_centroidal_model/CentroidalModelPinocchioMapping.h>
+#include <ocs2_mpc/MPC_MRT_Interface.h>
 
 #include <realtime_tools/realtime_buffer.h>
 #include <tf2_ros/transform_listener.h>
@@ -24,7 +25,8 @@ class KalmanFilterEstimate : public StateEstimateBase
 public:
   KalmanFilterEstimate(LeggedInterface& legged_interface, const std::vector<HybridJointHandle>& hybrid_joint_handles,
                        const std::vector<ContactSensorHandle>& contact_sensor_handles,
-                       const hardware_interface::ImuSensorHandle& imu_sensor_handle);
+                       const hardware_interface::ImuSensorHandle& imu_sensor_handle,
+                       SystemObservation* current_observation);
   vector_t update(const ros::Time& time, const ros::Duration& period) override;
 
 private:
@@ -52,6 +54,8 @@ private:
   tf2::Transform world2odom_;
   std::string frame_odom_, frame_guess_;
   bool topic_updated_;
+
+  SystemObservation* current_observation_;
 };
 
 }  // namespace legged
