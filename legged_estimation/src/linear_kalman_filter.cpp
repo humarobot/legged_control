@@ -15,13 +15,15 @@ namespace legged
 KalmanFilterEstimate::KalmanFilterEstimate(LeggedInterface& legged_interface,
                                            const std::vector<HybridJointHandle>& hybrid_joint_handles,
                                            const std::vector<ContactSensorHandle>& contact_sensor_handles,
-                                           const hardware_interface::ImuSensorHandle& imu_sensor_handle)
+                                           const hardware_interface::ImuSensorHandle& imu_sensor_handle,
+                                           SystemObservation* current_observation)
   : StateEstimateBase(legged_interface, hybrid_joint_handles, contact_sensor_handles, imu_sensor_handle)
   , pinocchio_ee_kine_(legged_interface.getPinocchioInterface(),
                        CentroidalModelPinocchioMapping(legged_interface.getCentroidalModelInfo()),
                        legged_interface.modelSettings().contactNames3DoF)
   , tf_listener_(tf_buffer_)
   , topic_updated_(false)
+  , current_observation_(current_observation)
 {
   x_hat_.setZero();
   ps_.setZero();
@@ -126,6 +128,9 @@ vector_t KalmanFilterEstimate::update(const ros::Time& time, const ros::Duration
   r.block(12, 12, 12, 12) = r_.block(12, 12, 12, 12) * foot_sensor_noise_velocity;
   r.block(24, 24, 4, 4) = r_.block(24, 24, 4, 4) * foot_height_sensor_noise;
 
+  std::vector<bool> contact_state = legged_interface_.getSwitchedModelReferenceManagerPtr()->getGaitSchedule()->getContactState(current_observation_->time);
+  // std::cout<<current_observation_->time<<std::endl;
+  // std::cout<<contact_state[0]<<" "<<contact_state[1]<<" "<<contact_state[2]<<" "<<contact_state[3]<<std::endl;
   for (int i = 0; i < 4; i++)
   {
     int i1 = 3 * i;
@@ -134,7 +139,9 @@ vector_t KalmanFilterEstimate::update(const ros::Time& time, const ros::Duration
     int r_index1 = i1;
     int r_index2 = 12 + i1;
     int r_index3 = 24 + i;
-    bool is_contact = contact_sensor_handles_[i].isContact();
+    // bool is_contact = contact_sensor_handles_[i].isContact();
+    bool is_contact = contact_state[i];
+    
     // bool is_contact = true;
     // std::cout<<is_contact<<" ";
 

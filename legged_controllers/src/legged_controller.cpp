@@ -76,7 +76,7 @@ bool LeggedController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHand
 
   // State estimation
   setupStateEstimate(*legged_interface_, hybrid_joint_handles_, contact_handles,
-                     robot_hw->get<hardware_interface::ImuSensorInterface>()->getHandle("unitree_imu"));
+                     robot_hw->get<hardware_interface::ImuSensorInterface>()->getHandle("unitree_imu"),&current_observation_);
 
   // Whole body control
   wbc_ = std::make_shared<Wbc>(task_file, *legged_interface_, ee_kinematics, verbose);
@@ -189,7 +189,7 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
 
   
   for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j){
-    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 5, 3, 0.8*torque(j));
+    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 5, 3, 1.0*torque(j));
     
     // std::cout<<vel_des(j)<<" ";
   }
@@ -290,17 +290,20 @@ void LeggedController::setupMrt()
 void LeggedController::setupStateEstimate(LeggedInterface& legged_interface,
                                           const std::vector<HybridJointHandle>& hybrid_joint_handles,
                                           const std::vector<ContactSensorHandle>& contact_sensor_handles,
-                                          const hardware_interface::ImuSensorHandle& imu_sensor_handle)
+                                          const hardware_interface::ImuSensorHandle& imu_sensor_handle,
+                                          SystemObservation* current_observation)
 {
   state_estimate_ = std::make_shared<KalmanFilterEstimate>(*legged_interface_, hybrid_joint_handles_,
-                                                           contact_sensor_handles, imu_sensor_handle);
+                                                           contact_sensor_handles, imu_sensor_handle,
+                                                           current_observation);
   current_observation_.time = 0;
 }
 
 void LeggedCheaterController::setupStateEstimate(LeggedInterface& legged_interface,
                                                  const std::vector<HybridJointHandle>& hybrid_joint_handles,
                                                  const std::vector<ContactSensorHandle>& contact_sensor_handles,
-                                                 const hardware_interface::ImuSensorHandle& imu_sensor_handle)
+                                                 const hardware_interface::ImuSensorHandle& imu_sensor_handle,
+                                                 SystemObservation* current_observation)
 {
   state_estimate_ = std::make_shared<FromTopicStateEstimate>(*legged_interface_, hybrid_joint_handles_,
                                                              contact_sensor_handles, imu_sensor_handle);

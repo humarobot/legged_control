@@ -58,7 +58,8 @@ protected:
   virtual void setupStateEstimate(LeggedInterface& legged_interface,
                                   const std::vector<HybridJointHandle>& hybrid_joint_handles,
                                   const std::vector<ContactSensorHandle>& contact_sensor_handles,
-                                  const hardware_interface::ImuSensorHandle& imu_sensor_handle);
+                                  const hardware_interface::ImuSensorHandle& imu_sensor_handle,
+                                  SystemObservation* current_observation);
 
   void setupArmController();
   void inverseKine(const geometry_msgs::PoseStampedConstPtr& );
@@ -92,6 +93,7 @@ protected:
 
   Eigen::Matrix<double, 6, 1> arm_measured_q_,arm_measured_v_;
 
+  // legged_interface_->getSwitchedModelReferenceManagerPtr()->getGaitSchedule()->getModeSchedule()->eventTimes
 
 private:
   std::thread mpc_thread_;
@@ -105,7 +107,9 @@ class LeggedCheaterController : public LeggedController
 protected:
   void setupStateEstimate(LeggedInterface& legged_interface, const std::vector<HybridJointHandle>& hybrid_joint_handles,
                           const std::vector<ContactSensorHandle>& contact_sensor_handles,
-                          const hardware_interface::ImuSensorHandle& imu_sensor_handle) override;
+                          const hardware_interface::ImuSensorHandle& imu_sensor_handle,
+                          SystemObservation* current_observation
+                          ) override;
 };
 
 }  // namespace legged
