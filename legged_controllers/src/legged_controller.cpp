@@ -189,7 +189,7 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
 
   
   for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j){
-    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 5, 3, 1.0*torque(j));
+    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 5, 3, 0.28*torque(j));
     
     // std::cout<<vel_des(j)<<" ";
   }
@@ -209,7 +209,7 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
   // std::cout<<arm_q_.transpose()<<std::endl;
 
   // Visualization
-  visualizer_->update(current_observation_, mpc_mrt_interface_->getPolicy(), mpc_mrt_interface_->getCommand());
+  // visualizer_->update(current_observation_, mpc_mrt_interface_->getPolicy(), mpc_mrt_interface_->getCommand());
 
   // Publish the observation. Only needed for the command interface
   observation_publisher_.publish(ros_msg_conversions::createObservationMsg(current_observation_));

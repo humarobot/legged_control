@@ -9,6 +9,7 @@
 #include <thread>
 #include <chrono>
 #include "sensor_msgs/Imu.h"
+#include <mutex>
 
 
 namespace legged
