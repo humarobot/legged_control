@@ -1,6 +1,6 @@
 lion_armed_hw:
   loop_frequency: 500
-  cycle_time_error_threshold: 0.002
+  cycle_time_error_threshold: 0.0005
   thread_priority: 95
   power_limit: 4
   contact_threshold: 40

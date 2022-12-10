@@ -53,6 +53,10 @@ LeggedHWLoop::LeggedHWLoop(ros::NodeHandle& nh, std::shared_ptr<LeggedHW> hardwa
 
     }
   });
+  sched_param sched2{ .sched_priority = thread_priority };
+  if (pthread_setschedparam(can_thread_.native_handle(), SCHED_FIFO, &sched2) != 0)
+    ROS_WARN("Failed to set threads priority (one possible reason could be that the user and the group permissions "
+             "are not set properly.).\n");
 }
 
 void LeggedHWLoop::update()

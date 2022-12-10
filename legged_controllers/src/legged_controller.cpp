@@ -170,8 +170,6 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
   // Whole body control
   current_observation_.input = optimized_input;
 
-  // std::cout<<optimized_input<<std::endl;
-
   vector_t x = wbc_->update(optimized_state, optimized_input, measured_rbd_state, planned_mode);
 
   
@@ -189,9 +187,8 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
 
   
   for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j){
-    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 0, 3, torque(j));
-    
-    // std::cout<<vel_des(j)<<" ";
+    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 4, 2.5, 0.2*torque(j));
+
   }
   // std::cout<<std::endl;
     
@@ -310,7 +307,7 @@ void LeggedCheaterController::setupStateEstimate(LeggedInterface& legged_interfa
 }
 
 void LeggedController::setupArmController(){
-  const std::string urdf_filename = "/home/lqk/ocs2_ws/src/legged_control/inverse_kinematics_pinocchio/arm.urdf";
+  const std::string urdf_filename = "/home/quad/ocs2_ws/src/legged_control/inverse_kinematics_pinocchio/arm.urdf";
   pinocchio::urdf::buildModel(urdf_filename,arm_model_);
   arm_data_ = pinocchio::Data(arm_model_);
   std::cout<<"Arm controller's model name:"<<arm_model_.name<<std::endl;

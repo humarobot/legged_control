@@ -69,7 +69,7 @@ ddp
 ; multiple_shooting settings
 multiple_shooting
 {
-  nThreads                              2
+  nThreads                              4
   dt                                    0.015
   sqpIteration                          1
   deltaTol                              1e-4

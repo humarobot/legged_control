@@ -14,7 +14,7 @@ int main(int argc, char** argv)
   // We run the ROS loop in a separate thread as external calls, such
   // as service callbacks loading controllers, can block the (main) control loop
   std::cout<<"Starting spinner ..."<<std::endl;
-  ros::AsyncSpinner spinner(3);
+  ros::AsyncSpinner spinner(4);
   spinner.start();
   
   try
