@@ -29,6 +29,7 @@
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "nav_msgs/Odometry.h"
+#include "tf/tf.h"
 
 namespace legged
 {
@@ -64,7 +65,7 @@ protected:
   void setupArmController();
   void inverseKine(const geometry_msgs::PoseStampedConstPtr& );
   void inverseKine();
-  void inverseKineWBC(const Eigen::Vector3d&);
+  void inverseKineWBC(const Eigen::Vector3d&, const Eigen::Quaterniond&);
   void updateArmState();
   void impedanceControl();
   Eigen::VectorXd arm_q_;
