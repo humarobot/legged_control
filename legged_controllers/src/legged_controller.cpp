@@ -46,7 +46,7 @@ bool LeggedController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHand
   setupLeggedInterface(task_file, urdf_file, reference_file, verbose);
   setupMpc();
   setupMrt();
-  setupArmController();
+  // setupArmController();
 
   // Visualization
   ros::NodeHandle nh;
@@ -64,9 +64,9 @@ bool LeggedController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHand
   for (const auto& joint_name : joint_names)
     hybrid_joint_handles_.push_back(hybrid_joint_interface->getHandle(joint_name));
   //Arm handles
-  std::vector<std::string> arm_joint_names{"joint1", "joint2", "joint3", "joint4", "joint5", "joint6"};
-  for (const auto& joint_name : arm_joint_names)
-    arm_joint_handles_.push_back(hybrid_joint_interface->getHandle(joint_name));
+  // std::vector<std::string> arm_joint_names{"joint1", "joint2", "joint3", "joint4", "joint5", "joint6"};
+  // for (const auto& joint_name : arm_joint_names)
+  //   arm_joint_handles_.push_back(hybrid_joint_interface->getHandle(joint_name));
 
   ContactSensorInterface* contact_interface = robot_hw->get<ContactSensorInterface>();
   std::vector<ContactSensorHandle> contact_handles;
@@ -131,7 +131,7 @@ void LeggedController::starting(const ros::Time& time)
   mpc_running_ = true;
   
   //Arm inverse kinematics
-  inverseKine();
+  // inverseKine();
 
   // ros::NodeHandle nh2;
   // auto armReferenceCallback = [this](const geometry_msgs::PoseStampedConstPtr& msg) {
@@ -141,28 +141,28 @@ void LeggedController::starting(const ros::Time& time)
   // };
   // armRefSubscriber_ = nh2.subscribe<geometry_msgs::PoseStamped>("legged_robot_EE_pose", 1, armReferenceCallback);
   
-  ros::NodeHandle nh3;
-  counter_ = 0;
-  auto basePoseCallback = [this](const nav_msgs::OdometryConstPtr& msg) {
-    counter_++;
-    // std::cout<<"odom callback"<<std::endl;
-    double dx = msg->pose.pose.position.x;
-    double dy = msg->pose.pose.position.y;
-    double dz = msg->pose.pose.position.z;
-    Eigen::Quaterniond quat;
-    quat.x() = msg->pose.pose.orientation.x;
-    quat.y() = msg->pose.pose.orientation.y;
-    quat.z() = msg->pose.pose.orientation.z;
-    quat.w() = msg->pose.pose.orientation.w;
-    Eigen::Vector3d basePos(dx,dy,dz);
-    // std::cout<<basePos.transpose()<<std::endl;
-    if(counter_ == 50){
-      inverseKineWBC(basePos,quat);
-      counter_ = 0; 
-    }
+  // ros::NodeHandle nh3;
+  // counter_ = 0;
+  // auto basePoseCallback = [this](const nav_msgs::OdometryConstPtr& msg) {
+  //   counter_++;
+  //   // std::cout<<"odom callback"<<std::endl;
+  //   double dx = msg->pose.pose.position.x;
+  //   double dy = msg->pose.pose.position.y;
+  //   double dz = msg->pose.pose.position.z;
+  //   Eigen::Quaterniond quat;
+  //   quat.x() = msg->pose.pose.orientation.x;
+  //   quat.y() = msg->pose.pose.orientation.y;
+  //   quat.z() = msg->pose.pose.orientation.z;
+  //   quat.w() = msg->pose.pose.orientation.w;
+  //   Eigen::Vector3d basePos(dx,dy,dz);
+  //   // std::cout<<basePos.transpose()<<std::endl;
+  //   if(counter_ == 50){
+  //     inverseKineWBC(basePos,quat);
+  //     counter_ = 0; 
+  //   }
                                              
-  };
-  odomSubscriber_ = nh3.subscribe<nav_msgs::Odometry>("odom",1,basePoseCallback);
+  // };
+  // odomSubscriber_ = nh3.subscribe<nav_msgs::Odometry>("odom",1,basePoseCallback);
   
 }
 
@@ -225,12 +225,12 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
   // arm_joint_handles_[3].setCommand(0,0,60,0,0.0);
   // arm_joint_handles_[4].setCommand(0,0,60,0,0.0);
   // arm_joint_handles_[5].setCommand(0,0,60,0,0.0);
-  arm_joint_handles_[0].setCommand(arm_q_[0],0,500,3,0.0);
-  arm_joint_handles_[1].setCommand(arm_q_[1],0,500,3,0.0);
-  arm_joint_handles_[2].setCommand(arm_q_[2],0,500,3,0.0);
-  arm_joint_handles_[3].setCommand(arm_q_[3],0,80,0,0.0);
-  arm_joint_handles_[4].setCommand(arm_q_[4],0,80,0,0.0);
-  arm_joint_handles_[5].setCommand(arm_q_[5],0,80,0,0.0);
+  // arm_joint_handles_[0].setCommand(arm_q_[0],0,500,3,0.0);
+  // arm_joint_handles_[1].setCommand(arm_q_[1],0,500,3,0.0);
+  // arm_joint_handles_[2].setCommand(arm_q_[2],0,500,3,0.0);
+  // arm_joint_handles_[3].setCommand(arm_q_[3],0,80,0,0.0);
+  // arm_joint_handles_[4].setCommand(arm_q_[4],0,80,0,0.0);
+  // arm_joint_handles_[5].setCommand(arm_q_[5],0,80,0,0.0);
   // std::cout<<arm_q_.transpose()<<std::endl;
 
   // Visualization
