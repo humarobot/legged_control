@@ -21,7 +21,7 @@ Wbc::Wbc(const std::string& task_file, LeggedInterface& legged_interface,
   , mapping_(info_)
   , ee_kinematics_(ee_kinematics.clone())
 {
-  num_decision_vars_ = info_.generalizedCoordinatesNum + 3 * info_.numThreeDofContacts + info_.actuatedDofNum;
+  num_decision_vars_ = info_.generalizedCoordinatesNum + info_.actuatedDofNum + 3 * info_.numThreeDofContacts;
   centroidal_dynamics_.setPinocchioInterface(pino_interface_);
   mapping_.setPinocchioInterface(pino_interface_);
   measured_q_ = vector_t(info_.generalizedCoordinatesNum);
@@ -87,19 +87,28 @@ vector_t Wbc::update(const vector_t& state_desired, const vector_t& input_desire
   // For base acceleration task
   updateCentroidalDynamics(pino_interface_, info_, measured_q_);
 
-  Task task_0 = formulateFloatingBaseEomTask() + formulateTorqueLimitsTask() + formulateFrictionConeTask() +
-                formulateNoContactMotionTask();
-  Task task_1 = formulateBaseAccelTask() + formulateSwingLegTask();
-  Task task_2 = formulateContactForceTask();
+  Task task_0 = formulateFloatingBaseEomTask() + formulateNoContactMotionTask();
+  Task task_1 = formulateTorqueLimitsTask() + formulateFrictionConeTask();
+  Task task_2 = formulateBaseAccelTask() + formulateSwingLegTask() + formulateContactForceTask();
   HoQp ho_qp(task_2, std::make_shared<HoQp>(task_1, std::make_shared<HoQp>(task_0)));
-  // Task task_0 = formulateFloatingBaseEomTask();
-  // Task task_1 = formulateNoContactMotionTask();
-  // Task task_2 = formulateTorqueLimitsTask();
-  // Task task_3 = formulateFrictionConeTask();
-
-  // HoQp ho_qp(task_3, std::make_shared<HoQp>(task_2, std::make_shared<HoQp>(task_1, std::make_shared<HoQp>(task_0))));
+  // Task task = formulateInvDynamicsTask();
+  // HoQp ho_qp(task);
 
   return ho_qp.getSolutions();
+}
+
+Task Wbc::formulateInvDynamicsTask()
+{
+  auto& data = pino_interface_.getData();
+  matrix_t s(info_.actuatedDofNum, info_.generalizedCoordinatesNum);
+  s.block(0, 0, info_.actuatedDofNum, 6).setZero();
+  s.block(0, 6, info_.actuatedDofNum, info_.actuatedDofNum).setIdentity();
+  matrix_t a(info_.generalizedCoordinatesNum, num_decision_vars_);
+  vector_t b(info_.generalizedCoordinatesNum);
+  vector_t foot_force = input_desired_.head(12);
+  a << data.M, -s.transpose();
+  b = j_.transpose()*foot_force -data.nle;
+  return Task(a, b, matrix_t(), vector_t());
 }
 
 Task Wbc::formulateFloatingBaseEomTask()

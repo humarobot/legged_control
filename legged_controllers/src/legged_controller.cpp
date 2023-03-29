@@ -30,6 +30,9 @@
 #include <pinocchio/algorithm/crba.hpp>
 #include <pinocchio/algorithm/rnea.hpp>
 
+#include <chrono>
+#include <thread>
+
 
 namespace legged
 {
@@ -46,7 +49,6 @@ bool LeggedController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHand
   setupLeggedInterface(task_file, urdf_file, reference_file, verbose);
   setupMpc();
   setupMrt();
-  // setupArmController();
 
   // Visualization
   ros::NodeHandle nh;
@@ -63,10 +65,6 @@ bool LeggedController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHand
                                         "RF_HAA", "RF_HFE", "RF_KFE", "RH_HAA", "RH_HFE", "RH_KFE"};
   for (const auto& joint_name : joint_names)
     hybrid_joint_handles_.push_back(hybrid_joint_interface->getHandle(joint_name));
-  //Arm handles
-  // std::vector<std::string> arm_joint_names{"joint1", "joint2", "joint3", "joint4", "joint5", "joint6"};
-  // for (const auto& joint_name : arm_joint_names)
-  //   arm_joint_handles_.push_back(hybrid_joint_interface->getHandle(joint_name));
 
   ContactSensorInterface* contact_interface = robot_hw->get<ContactSensorInterface>();
   std::vector<ContactSensorHandle> contact_handles;
@@ -83,25 +81,6 @@ bool LeggedController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHand
 
   // Safety Checker
   safety_checker_ = std::make_shared<SafetyChecker>(legged_interface_->getCentroidalModelInfo());
-
-
-  // ros::NodeHandle nh3;
-  // counter_ = 0;
-  // auto basePoseCallback = [this](const nav_msgs::OdometryConstPtr& msg) {
-  //   counter_++;
-  //   // std::cout<<"odom callback"<<std::endl;
-  //   double dx = msg->pose.pose.position.x;
-  //   double dy = msg->pose.pose.position.y;
-  //   double dz = msg->pose.pose.position.z;
-  //   Eigen::Vector3d basePos(dx,dy,dz);
-  //   // std::cout<<basePos.transpose()<<std::endl;
-  //   if(counter_ == 50){
-  //     inverseKineWBC(basePos);
-  //     counter_ = 0; 
-  //   }
-                                             
-  // // };
-  // odomSubscriber_ = nh3.subscribe<nav_msgs::Odometry>("odom",1,basePoseCallback);
 
   return true;
 }
@@ -130,45 +109,11 @@ void LeggedController::starting(const ros::Time& time)
 
   mpc_running_ = true;
   
-  //Arm inverse kinematics
-  // inverseKine();
-
-  // ros::NodeHandle nh2;
-  // auto armReferenceCallback = [this](const geometry_msgs::PoseStampedConstPtr& msg) {
-  //   // std::cout<<"callback"<<std::endl;
-  //   // std::cout<<"test"<<std::endl;
-  //   inverseKine(msg);
-  // };
-  // armRefSubscriber_ = nh2.subscribe<geometry_msgs::PoseStamped>("legged_robot_EE_pose", 1, armReferenceCallback);
-  
-  // ros::NodeHandle nh3;
-  // counter_ = 0;
-  // auto basePoseCallback = [this](const nav_msgs::OdometryConstPtr& msg) {
-  //   counter_++;
-  //   // std::cout<<"odom callback"<<std::endl;
-  //   double dx = msg->pose.pose.position.x;
-  //   double dy = msg->pose.pose.position.y;
-  //   double dz = msg->pose.pose.position.z;
-  //   Eigen::Quaterniond quat;
-  //   quat.x() = msg->pose.pose.orientation.x;
-  //   quat.y() = msg->pose.pose.orientation.y;
-  //   quat.z() = msg->pose.pose.orientation.z;
-  //   quat.w() = msg->pose.pose.orientation.w;
-  //   Eigen::Vector3d basePos(dx,dy,dz);
-  //   // std::cout<<basePos.transpose()<<std::endl;
-  //   if(counter_ == 50){
-  //     inverseKineWBC(basePos,quat);
-  //     counter_ = 0; 
-  //   }
-                                             
-  // };
-  // odomSubscriber_ = nh3.subscribe<nav_msgs::Odometry>("odom",1,basePoseCallback);
-  
+ 
 }
 
 void LeggedController::update(const ros::Time& time, const ros::Duration& period)
 {
-  // std::cout<<period.toSec()<<std::endl; //周期没问题，根据插件controlPeriod参数的设置相应变化，问题出在WBC求解
   // State Estimate
   current_observation_.time += period.toSec();
 
@@ -193,11 +138,13 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
   // Whole body control
   current_observation_.input = optimized_input;
 
+  // auto t1 = std::chrono::steady_clock::now();
   vector_t x = wbc_->update(optimized_state, optimized_input, measured_rbd_state, planned_mode);
-
+  // auto t2 = std::chrono::steady_clock::now();
+  // auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2-t1);
+  // std::cout<<duration.count()<<"us \n";
   
   vector_t torque = x.tail(12);
-
   vector_t pos_des = centroidal_model::getJointAngles(optimized_state, legged_interface_->getCentroidalModelInfo());
   vector_t vel_des = centroidal_model::getJointVelocities(optimized_input, legged_interface_->getCentroidalModelInfo());
 
@@ -208,30 +155,11 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
     stopRequest(time);
   }
 
-  
+  //PID controller
   for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j){
     hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 4, 2.5, torque(j));
 
   }
-  // std::cout<<std::endl;
-    
-  // hybrid_joint_handles_[1].setCommand(0., 0., 0, 0, 1.);
-
-  // ARM control
-  // impedanceControl();
-  // arm_joint_handles_[0].setCommand(0,0,500,3,0.0);
-  // arm_joint_handles_[1].setCommand(0,0,500,3,0.0);
-  // arm_joint_handles_[2].setCommand(0,0,500,3,0.0);
-  // arm_joint_handles_[3].setCommand(0,0,60,0,0.0);
-  // arm_joint_handles_[4].setCommand(0,0,60,0,0.0);
-  // arm_joint_handles_[5].setCommand(0,0,60,0,0.0);
-  // arm_joint_handles_[0].setCommand(arm_q_[0],0,500,3,0.0);
-  // arm_joint_handles_[1].setCommand(arm_q_[1],0,500,3,0.0);
-  // arm_joint_handles_[2].setCommand(arm_q_[2],0,500,3,0.0);
-  // arm_joint_handles_[3].setCommand(arm_q_[3],0,80,0,0.0);
-  // arm_joint_handles_[4].setCommand(arm_q_[4],0,80,0,0.0);
-  // arm_joint_handles_[5].setCommand(arm_q_[5],0,80,0,0.0);
-  // std::cout<<arm_q_.transpose()<<std::endl;
 
   // Visualization
   visualizer_->update(current_observation_, mpc_mrt_interface_->getPolicy(), mpc_mrt_interface_->getCommand());
@@ -332,258 +260,6 @@ void LeggedCheaterController::setupStateEstimate(LeggedInterface& legged_interfa
 {
   state_estimate_ = std::make_shared<FromTopicStateEstimate>(*legged_interface_, hybrid_joint_handles_,
                                                              contact_sensor_handles, imu_sensor_handle);
-}
-
-void LeggedController::setupArmController(){
-  const std::string urdf_filename = "/home/lqk/ocs2_ws/src/legged_control/inverse_kinematics_pinocchio/arm.urdf";
-  pinocchio::urdf::buildModel(urdf_filename,arm_model_);
-  arm_data_ = pinocchio::Data(arm_model_);
-  std::cout<<"Arm controller's model name:"<<arm_model_.name<<std::endl;
-
-}
-
-void LeggedController::inverseKine(const geometry_msgs::PoseStampedConstPtr& msg){
-  const int JOINT_ID = 6;
-  //Get desired pos
-  Eigen::Vector3d pos(msg->pose.position.x,msg->pose.position.y,msg->pose.position.z);
-  //Get desired quaternion and trans to rotational matrix
-  Eigen::Quaterniond quat;
-  quat.x() = msg->pose.orientation.x;
-  quat.y() = msg->pose.orientation.y;
-  quat.z() = msg->pose.orientation.z;
-  quat.w() = msg->pose.orientation.w;
-  Eigen::Matrix3d R = quat.normalized().toRotationMatrix();
-  const pinocchio::SE3 oMdes(R, pos);
-
-  Eigen::VectorXd q = pinocchio::neutral(arm_model_);
-  const double eps = 1e-4;
-  const int IT_MAX = 1000;
-  const double DT = 1e-1;
-  const double damp = 1e-6;
-
-  pinocchio::Data::Matrix6x J(6, arm_model_.nv);
-  J.setZero();
-
-  bool success = false;
-  typedef Eigen::Matrix<double, 6, 1> Vector6d;
-  Vector6d err;
-  Eigen::VectorXd v(arm_model_.nv);
-  for (int i = 0;; i++){
-    pinocchio::forwardKinematics(arm_model_, arm_data_, q);
-    const pinocchio::SE3 dMi = oMdes.actInv(arm_data_.oMi[JOINT_ID]);
-    err = pinocchio::log6(dMi).toVector();
-    if (err.norm() < eps)
-    {
-    success = true;
-    break;
-    }
-    if (i >= IT_MAX)
-    {
-    success = false;
-    break;
-    }
-    pinocchio::computeJointJacobian(arm_model_, arm_data_, q, JOINT_ID, J);
-    pinocchio::Data::Matrix6 JJt;
-    JJt.noalias() = J * J.transpose();
-    JJt.diagonal().array() += damp;
-    v.noalias() = -J.transpose() * JJt.ldlt().solve(err);
-    q = pinocchio::integrate(arm_model_, q, v * DT);
-    // if (!(i % 10))
-    // std::cout << i << ": error = " << err.transpose() << std::endl;
-  }
-  if (success){
-      // std::cout << "Convergence achieved!" << std::endl;
-      arm_q_=q;
-  }
-  else{
-      std::cout << "\nWarning: the iterative algorithm has not reached convergence to the desired precision" << std::endl;
-  }
-  std::cout << "\nresult: " << q.transpose() << std::endl;
-  // std::cout << "\nfinal error: " << err.transpose() << std::endl;
-  // std::cout<<arm_q_[0]<<" "<<arm_q_[1]<<" "<<arm_q_[2]<<" "<<arm_q_[3]<<" "<<arm_q_[4]<<" "<<arm_q_[5]<<" "<<std::endl;
-}
-
-void LeggedController::inverseKine(){
-  const int JOINT_ID = 6;
-  const pinocchio::SE3 oMdes(Eigen::Matrix3d::Identity(), Eigen::Vector3d(0.2, 0., 0.2));
-
-  Eigen::VectorXd q = pinocchio::neutral(arm_model_);
-  const double eps = 1e-4;
-  const int IT_MAX = 1000;
-  const double DT = 1e-1;
-  const double damp = 1e-6;
-
-  pinocchio::Data::Matrix6x J(6, arm_model_.nv);
-  J.setZero();
-
-  bool success = false;
-  typedef Eigen::Matrix<double, 6, 1> Vector6d;
-  Vector6d err;
-  Eigen::VectorXd v(arm_model_.nv);
-  for (int i = 0;; i++){
-    pinocchio::forwardKinematics(arm_model_, arm_data_, q);
-    const pinocchio::SE3 dMi = oMdes.actInv(arm_data_.oMi[JOINT_ID]);
-    err = pinocchio::log6(dMi).toVector();
-    if (err.norm() < eps)
-    {
-    success = true;
-    break;
-    }
-    if (i >= IT_MAX)
-    {
-    success = false;
-    break;
-    }
-    pinocchio::computeJointJacobian(arm_model_, arm_data_, q, JOINT_ID, J);
-    pinocchio::Data::Matrix6 JJt;
-    JJt.noalias() = J * J.transpose();
-    JJt.diagonal().array() += damp;
-    v.noalias() = -J.transpose() * JJt.ldlt().solve(err);
-    q = pinocchio::integrate(arm_model_, q, v * DT);
-    // if (!(i % 10))
-    // std::cout << i << ": error = " << err.transpose() << std::endl;
-  }
-  if (success){
-      std::cout << "Convergence achieved!" << std::endl;
-      arm_q_=q;
-  }
-  else{
-      std::cout << "\nWarning: the iterative algorithm has not reached convergence to the desired precision" << std::endl;
-  }
-  std::cout << "\nresult: " << q.transpose() << std::endl;
-  // std::cout << "\nfinal error: " << err.transpose() << std::endl;
-  std::cout<<arm_q_[0]<<" "<<arm_q_[1]<<" "<<arm_q_[2]<<" "<<arm_q_[3]<<" "<<arm_q_[4]<<" "<<arm_q_[5]<<" "<<std::endl;
-}
-
-void LeggedController::inverseKineWBC(const Eigen::Vector3d& base_pos,const Eigen::Quaterniond& quat){
-  const int JOINT_ID = 6;
-  Eigen::Vector3d pos_with_base(0.5,0.,0.4);
-  Eigen::Matrix3d R = quat.normalized().toRotationMatrix().transpose();
-  const pinocchio::SE3 oMdes(R, R*(pos_with_base - base_pos));
-
-  Eigen::VectorXd q = pinocchio::neutral(arm_model_);
-  const double eps = 1e-4;
-  const int IT_MAX = 1000;
-  const double DT = 1e-1;
-  const double damp = 1e-6;
-
-  pinocchio::Data::Matrix6x J(6, arm_model_.nv);
-  J.setZero();
-
-  bool success = false;
-  typedef Eigen::Matrix<double, 6, 1> Vector6d;
-  Vector6d err;
-  Eigen::VectorXd v(arm_model_.nv);
-  for (int i = 0;; i++){
-    pinocchio::forwardKinematics(arm_model_, arm_data_, q);
-    const pinocchio::SE3 dMi = oMdes.actInv(arm_data_.oMi[JOINT_ID]);
-    err = pinocchio::log6(dMi).toVector();
-    if (err.norm() < eps)
-    {
-    success = true;
-    break;
-    }
-    if (i >= IT_MAX)
-    {
-    success = false;
-    break;
-    }
-    pinocchio::computeJointJacobian(arm_model_, arm_data_, q, JOINT_ID, J);
-    pinocchio::Data::Matrix6 JJt;
-    JJt.noalias() = J * J.transpose();
-    JJt.diagonal().array() += damp;
-    v.noalias() = -J.transpose() * JJt.ldlt().solve(err);
-    q = pinocchio::integrate(arm_model_, q, v * DT);
-    // if (!(i % 10))
-    // std::cout << i << ": error = " << err.transpose() << std::endl;
-  }
-  if (success){
-      // std::cout << "Convergence achieved!" << std::endl;
-      arm_q_=q;
-  }
-  else{
-      std::cout << "\nWarning: the iterative algorithm has not reached convergence to the desired precision" << std::endl;
-  }
-  // std::cout << "\nresult: " << q.transpose() << std::endl;
-  // // std::cout << "\nfinal error: " << err.transpose() << std::endl;
-  // std::cout<<arm_q_[0]<<" "<<arm_q_[1]<<" "<<arm_q_[2]<<" "<<arm_q_[3]<<" "<<arm_q_[4]<<" "<<arm_q_[5]<<" "<<std::endl;  
-}
-
-void LeggedController::updateArmState(){
-  // std::cout<<"0"<<std::endl;
-  for(int i=0;i<6;i++){
-    arm_measured_q_(i,0) = arm_joint_handles_[i].getPosition();
-    arm_measured_v_(i,0) = arm_joint_handles_[i].getVelocity();
-  }  
-  std::cout<<"arm q:"<<arm_measured_q_.transpose()<<std::endl;
-  std::cout<<"arm v:"<<arm_measured_v_.transpose()<<std::endl;
-  pinocchio::forwardKinematics(arm_model_, arm_data_, arm_measured_q_, arm_measured_v_);
-  pinocchio::computeJointJacobians(arm_model_, arm_data_);
-  pinocchio::updateFramePlacements(arm_model_, arm_data_);
-  pinocchio::crba(arm_model_, arm_data_, arm_measured_q_);
-  arm_data_.M.triangularView<Eigen::StrictlyLower>() = arm_data_.M.transpose().triangularView<Eigen::StrictlyLower>();
-  pinocchio::nonLinearEffects(arm_model_, arm_data_, arm_measured_q_, arm_measured_v_);
-}
-
-void LeggedController::impedanceControl(){
-  updateArmState();
-  const int JOINT_ID = 6;
-  pinocchio::Data::Matrix6x J(6, 6),J_inv(6,6),A_mass(6,6),J_dot(6,6),B(6,6),K(6,6);
-  pinocchio::Data::Matrix6x ita(6,1);
-  typedef Eigen::Matrix<double, 6, 1> Vector6d;
-  Vector6d err,tau,ones;
-  ones<<1,1,1,1,1,1;
-  J.setZero();
-  //计算操作空间动力学
-  pinocchio::getJointJacobian(arm_model_,arm_data_,JOINT_ID,pinocchio::ReferenceFrame::LOCAL,J);
-  pinocchio::getJointJacobianTimeVariation(arm_model_,arm_data_,JOINT_ID,pinocchio::ReferenceFrame::LOCAL,J_dot);
-  J_inv=J.inverse();
-  // J_inv = J.pseudoInverse();
-  // std::cout<<"1"<<std::endl;
-  // J_inv = J.ldlt().solve(ones);
-  // std::cout<<"2"<<std::endl;
-  A_mass = J_inv.transpose()*arm_data_.M*J_inv;
-  ita = J_inv.transpose()*arm_data_.nle-A_mass*J_dot*arm_measured_v_;
-  std::cout<<"J inverse transpose:"<<std::endl;
-  std::cout<<J_inv.transpose()<<std::endl;
-  std::cout<<"mass matrix M:"<<std::endl;
-  std::cout<<arm_data_.M<<std::endl;
-  std::cout<<"J derivative:"<<std::endl;
-  std::cout<<J_dot<<std::endl;
-  std::cout<<"nonlinear term:"<<std::endl;
-  std::cout<<arm_data_.nle.transpose()<<std::endl;
-  // std::cout<<"3"<<std::endl;
-  //阻抗控制
-  B = Eigen::Matrix<double,6,6>::Identity()*5.0;
-  B(3,3) = 0.0;
-  B(4,4) = 0.0;
-  B(5,5) = 0.0;
-  K = Eigen::Matrix<double,6,6>::Identity()*5.0;
-  K(0,0) = 50.0;
-  K(1,1) = 50.0;
-  K(2,2) = 50.0;
-  // K(3,3) = 0.0;
-  // K(4,4) = 0.0;
-  // K(5,5) = 0.0;
-  // std::cout<<"4"<<std::endl;
-  const pinocchio::SE3 oMdes(Eigen::Matrix3d::Identity(), Eigen::Vector3d(0., 0., 0.4));
-  // std::cout<<"5"<<std::endl;
-  const pinocchio::SE3 iMd = arm_data_.oMi[JOINT_ID].actInv(oMdes);
-  // std::cout<<"6"<<std::endl;
-  err = pinocchio::log6(iMd).toVector();
-  // std::cout<<"7"<<std::endl;
-  // tau = J.transpose()*(ita-B*J*arm_measured_v_-K*err);
-  // tau = J.transpose()*(-B*J*arm_measured_v_-K*err);
-  tau = J.transpose()*(K*err-B*J*arm_measured_v_)+arm_data_.nle;
-
-
-  arm_joint_handles_[0].setCommand(0,0,0,0,tau[0]);
-  arm_joint_handles_[1].setCommand(0,0,0,0,tau[1]);
-  arm_joint_handles_[2].setCommand(0,0,0,0,tau[2]);
-  arm_joint_handles_[3].setCommand(0,0,0,0,tau[3]);
-  arm_joint_handles_[4].setCommand(0,0,0,0,tau[4]);
-  arm_joint_handles_[5].setCommand(0,0,0,0,tau[5]);
-
 }
 
 

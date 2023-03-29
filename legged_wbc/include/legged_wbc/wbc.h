@@ -28,6 +28,7 @@ public:
 private:
   void loadTasksSetting(const std::string& task_file, bool verbose);
 
+  Task formulateInvDynamicsTask();
   Task formulateFloatingBaseEomTask();
   Task formulateTorqueLimitsTask();
   Task formulateNoContactMotionTask();
