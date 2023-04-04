@@ -1,9 +1,8 @@
-//
-// Created by qiayuan on 2022/6/24.
-//
 
 #pragma once
 
+
+#include "pinocchio/parsers/sample-models.hpp"
 #include <controller_interface/multi_interface_controller.h>
 #include <legged_common/hardware_interface/contact_sensor_interface.h>
 #include <hardware_interface/imu_sensor_interface.h>
@@ -18,7 +17,6 @@
 
 #include "legged_controllers/safety_checker.h"
 
-#include "pinocchio/parsers/sample-models.hpp"
 #include "pinocchio/parsers/urdf.hpp"
 #include "pinocchio/spatial/explog.hpp"
 #include "pinocchio/algorithm/kinematics.hpp"
