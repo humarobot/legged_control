@@ -24,6 +24,7 @@
 #include <ocs2_legged_robot/constraint/NormalVelocityConstraintCppAd.h>
 #include <ocs2_legged_robot/constraint/ZeroForceConstraint.h>
 #include <ocs2_legged_robot/constraint/ZeroVelocityConstraintCppAd.h>
+#include "ocs2_legged_robot/constraint/FootsTrackConstraint.h"
 #include <ocs2_legged_robot/cost/LeggedRobotQuadraticTrackingCost.h>
 #include <ocs2_legged_robot/dynamics/LeggedRobotDynamicsAD.h>
 #include <ocs2_legged_robot/initialization/LeggedRobotInitializer.h>
@@ -121,13 +122,13 @@ void LeggedInterface::setupOptimalControlProblem(const std::string& taskFile, co
 
     problemPtr_->softConstraintPtr->add(foot_name + "_frictionCone",
                                         getFrictionConeConstraint(i, friction_coefficient, barrier_penalty_config));
-    problemPtr_->equalityConstraintPtr->add(foot_name + "_zeroForce",
-                std::unique_ptr<StateInputConstraint>(new ZeroForceConstraint(*referenceManagerPtr_, i, centroidalModelInfo_)));
+    problemPtr_->equalityConstraintPtr->add(foot_name + "_zeroForce", getZeroForceConstraint(i));
     problemPtr_->equalityConstraintPtr->add(foot_name + "_zeroVelocity",
                                             getZeroVelocityConstraint(*ee_kinematics_ptr, i));
-    problemPtr_->equalityConstraintPtr->add(foot_name + "_normalVelocity",
-                                            std::unique_ptr<StateInputConstraint>(new NormalVelocityConstraintCppAd(
-                                                *referenceManagerPtr_, *ee_kinematics_ptr, i)));
+    // problemPtr_->equalityConstraintPtr->add(foot_name + "_normalVelocity",
+    //                                         getNormalVelocityConstraint(*ee_kinematics_ptr, i));
+    problemPtr_->equalityConstraintPtr->add(foot_name + "_footsTrack",
+                                            getFootsTrackConstraint(*ee_kinematics_ptr, i));
   }
 
   // Pre-computation
@@ -315,6 +316,26 @@ LeggedInterface::getZeroVelocityConstraint(const EndEffectorKinematics<scalar_t>
   return std::unique_ptr<StateInputConstraint>(
       new ZeroVelocityConstraintCppAd(*referenceManagerPtr_, eeKinematics, contactPointIndex,
                                       ee_zero_vel_con_config(modelSettings_.positionErrorGain)));
+}
+
+std::unique_ptr<StateInputConstraint>
+LeggedInterface::getNormalVelocityConstraint(const EndEffectorKinematics<scalar_t>& eeKinematics,
+                                             size_t contactPointIndex)
+{
+    return std::unique_ptr<StateInputConstraint>(
+        new NormalVelocityConstraintCppAd(*referenceManagerPtr_, eeKinematics, contactPointIndex));
+}
+std::unique_ptr<StateInputConstraint> LeggedInterface::getZeroForceConstraint(size_t contactPointIndex)
+{
+    return std::unique_ptr<StateInputConstraint>(
+        new ZeroForceConstraint(*referenceManagerPtr_, contactPointIndex, centroidalModelInfo_));
+}
+std::unique_ptr<StateInputConstraint>
+LeggedInterface::getFootsTrackConstraint(const EndEffectorKinematics<scalar_t>& eeKinematics,
+                                             size_t contactPointIndex)
+{
+    return std::unique_ptr<StateInputConstraint>(
+        new FootsTrackConstraintCppAd(*referenceManagerPtr_, eeKinematics, contactPointIndex));
 }
 
 }  // namespace legged

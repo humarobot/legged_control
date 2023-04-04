@@ -100,7 +100,11 @@ protected:
                                                             const RelaxedBarrierPenalty::Config& barrierPenaltyConfig);
   std::unique_ptr<StateInputConstraint> getZeroVelocityConstraint(const EndEffectorKinematics<scalar_t>& eeKinematics,
                                                                   size_t contactPointIndex);
-
+  std::unique_ptr<StateInputConstraint> getNormalVelocityConstraint(const EndEffectorKinematics<scalar_t>& eeKinematics,
+                                                                    size_t contactPointIndex);
+  std::unique_ptr<StateInputConstraint> getFootsTrackConstraint(const EndEffectorKinematics<scalar_t>& eeKinematics,
+                                                                size_t contactPointIndex);
+  std::unique_ptr<StateInputConstraint> getZeroForceConstraint(size_t contactPointIndex);
   ModelSettings modelSettings_;
   mpc::Settings mpcSettings_;
   ddp::Settings ddpSettings_;
