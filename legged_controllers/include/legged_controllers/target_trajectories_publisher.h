@@ -63,9 +63,11 @@ public:
       cmd_goal[2] = pose.pose.position.z;
       Eigen::Quaternion<scalar_t> q(pose.pose.orientation.w, pose.pose.orientation.x, pose.pose.orientation.y,
                                     pose.pose.orientation.z);
-      cmd_goal[3] = q.toRotationMatrix().eulerAngles(0, 1, 2).z();
-      cmd_goal[4] = q.toRotationMatrix().eulerAngles(0, 1, 2).y();
-      cmd_goal[5] = q.toRotationMatrix().eulerAngles(0, 1, 2).x();
+      //quaternion to rqy euler angle
+      cmd_goal[3] = std::atan2(2 * (q.w() * q.x() + q.y() * q.z()), 1 - 2 * (q.x() * q.x() + q.y() * q.y()));
+      cmd_goal[4] = std::asin(2 * (q.w() * q.y() - q.z() * q.x()));
+      cmd_goal[5] = std::atan2(2 * (q.w() * q.z() + q.x() * q.y()), 1 - 2 * (q.y() * q.y() + q.z() * q.z()));
+      
 
       const auto trajectories = goal_to_target_trajectories_(cmd_goal, latest_observation_);
       target_trajectories_publisher_->publishTargetTrajectories(trajectories);
