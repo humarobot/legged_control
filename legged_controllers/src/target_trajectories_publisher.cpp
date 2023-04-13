@@ -38,9 +38,9 @@ TargetTrajectories targetPoseToTargetTrajectories(const vector_t& target_pose, c
 
   // desired state trajectory
   vector_t current_pose = observation.state.segment<6>(6);
-  current_pose(2) = COM_HEIGHT;
-  current_pose(4) = 0;
-  current_pose(5) = 0;
+  // current_pose(2) = COM_HEIGHT;
+  // current_pose(4) = 0;
+  // current_pose(5) = 0;
   vector_array_t state_trajectory(2, vector_t::Zero(observation.state.size()));
   state_trajectory[0] << vector_t::Zero(6), current_pose, DEFAULT_JOINT_STATE;
   state_trajectory[1] << vector_t::Zero(6), target_pose, DEFAULT_JOINT_STATE;
@@ -96,8 +96,8 @@ int main(int argc, char* argv[])
   const std::string robot_name = "legged_robot";
 
   // Initialize ros node
-  ::ros::init(argc, argv, robot_name + "_target");
-  ::ros::NodeHandle node_handle;
+  ros::init(argc, argv, robot_name + "_target");
+  ros::NodeHandle node_handle;
   // Get node parameters
   std::string reference_file, task_file;
   node_handle.getParam("/reference_file", reference_file);

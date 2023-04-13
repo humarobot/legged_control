@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 
 <launch>
-    <arg name="cheater" default="false"/>
+    <arg name="cheater" default="true"/>
 
     <arg name="task_file" default="$(find legged_controllers)/config/task.info"/>
     <arg name="reference_file" default="$(find legged_controllers)/config/reference.info"/>

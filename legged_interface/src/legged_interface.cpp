@@ -125,10 +125,10 @@ void LeggedInterface::setupOptimalControlProblem(const std::string& taskFile, co
     problemPtr_->equalityConstraintPtr->add(foot_name + "_zeroForce", getZeroForceConstraint(i));
     problemPtr_->equalityConstraintPtr->add(foot_name + "_zeroVelocity",
                                             getZeroVelocityConstraint(*ee_kinematics_ptr, i));
-    // problemPtr_->equalityConstraintPtr->add(foot_name + "_normalVelocity",
-    //                                         getNormalVelocityConstraint(*ee_kinematics_ptr, i));
-    problemPtr_->equalityConstraintPtr->add(foot_name + "_footsTrack",
-                                            getFootsTrackConstraint(*ee_kinematics_ptr, i));
+    problemPtr_->equalityConstraintPtr->add(foot_name + "_normalVelocity",
+                                            getNormalVelocityConstraint(*ee_kinematics_ptr, i));
+    // problemPtr_->equalityConstraintPtr->add(foot_name + "_footsTrack",
+                                            // getFootsTrackConstraint(*ee_kinematics_ptr, i));
   }
 
   // Pre-computation
