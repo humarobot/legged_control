@@ -1,4 +1,4 @@
-centroidalModelType             1      // 0: FullCentroidalDynamics, 1: Single Rigid Body Dynamics
+centroidalModelType             0      // 0: FullCentroidalDynamics, 1: Single Rigid Body Dynamics
 
 legged_robot_interface
 {
@@ -7,7 +7,7 @@ legged_robot_interface
 
 model_settings
 {
-  positionErrorGain             20.0
+  positionErrorGain             1.0
   phaseTransitionStanceTime     0.4
 
   verboseCppAd                  true
@@ -99,7 +99,7 @@ rollout
 
 mpc
 {
-  timeHorizon                     1.0  ; [s]
+  timeHorizon                     1.  ; [s]
   solutionTimeWindow              -1   ; maximum [s]
   coldStart                       false
 

@@ -24,7 +24,7 @@
 #include <ocs2_legged_robot/constraint/NormalVelocityConstraintCppAd.h>
 #include <ocs2_legged_robot/constraint/ZeroForceConstraint.h>
 #include <ocs2_legged_robot/constraint/ZeroVelocityConstraintCppAd.h>
-#include "ocs2_legged_robot/constraint/FootsTrackConstraint.h"
+// #include "ocs2_legged_robot/constraint/FootsTrackConstraint.h"
 #include <ocs2_legged_robot/cost/LeggedRobotQuadraticTrackingCost.h>
 #include <ocs2_legged_robot/dynamics/LeggedRobotDynamicsAD.h>
 #include <ocs2_legged_robot/initialization/LeggedRobotInitializer.h>
@@ -330,12 +330,12 @@ std::unique_ptr<StateInputConstraint> LeggedInterface::getZeroForceConstraint(si
     return std::unique_ptr<StateInputConstraint>(
         new ZeroForceConstraint(*referenceManagerPtr_, contactPointIndex, centroidalModelInfo_));
 }
-std::unique_ptr<StateInputConstraint>
-LeggedInterface::getFootsTrackConstraint(const EndEffectorKinematics<scalar_t>& eeKinematics,
-                                             size_t contactPointIndex)
-{
-    return std::unique_ptr<StateInputConstraint>(
-        new FootsTrackConstraintCppAd(*referenceManagerPtr_, eeKinematics, contactPointIndex));
-}
+// std::unique_ptr<StateInputConstraint>
+// LeggedInterface::getFootsTrackConstraint(const EndEffectorKinematics<scalar_t>& eeKinematics,
+//                                              size_t contactPointIndex)
+// {
+//     return std::unique_ptr<StateInputConstraint>(
+//         new FootsTrackConstraintCppAd(*referenceManagerPtr_, eeKinematics, contactPointIndex));
+// }
 
 }  // namespace legged

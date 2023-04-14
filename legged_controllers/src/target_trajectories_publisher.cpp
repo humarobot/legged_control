@@ -7,6 +7,7 @@
 #include <ocs2_core/Types.h>
 #include <ocs2_core/misc/LoadData.h>
 #include <ocs2_robotic_tools/common/RotationTransforms.h>
+#include "angles/angles.h"
 
 using namespace legged;
 
@@ -59,7 +60,7 @@ TargetTrajectories goalToTargetTrajectories(const vector_t& goal, const SystemOb
     target(0) = goal(0);
     target(1) = goal(1);
     target(2) = goal(2);
-    target(3) = goal(3);
+    target(3) = current_pose(3)+angles::shortest_angular_distance(current_pose(3), goal(3));
     target(4) = goal(4);
     target(5) = goal(5);
     return target;

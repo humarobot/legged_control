@@ -17,12 +17,12 @@
   <!-- push robot_description to factory and spawn robot in gazebo -->
   <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" clear_params="true"
     args="-z 0.7 -param legged_robot_description -urdf -model lion" output="screen" />
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find lion_description)/rviz/lion.rviz" />
+  <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find lion_description)/rviz/lion.rviz" /> -->
   <!-- <node name="rqt_controller_manager" pkg="rqt_controller_manager"
   type="rqt_controller_manager"/> -->
   <node name="rqt_robot_steering" pkg="rqt_robot_steering" type="rqt_robot_steering" />
 
-  <arg name="node_start_delay" default="2.5" /> 
+  <arg name="node_start_delay" default="3.5" /> 
   <node name="start_controller_manager" pkg="controller_manager" type="controller_manager" output="screen"
     args="start controllers/legged_controller" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
 </launch>

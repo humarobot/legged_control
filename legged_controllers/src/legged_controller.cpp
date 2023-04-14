@@ -166,6 +166,7 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
 
   // Publish the observation. Only needed for the command interface
   observation_publisher_.publish(ros_msg_conversions::createObservationMsg(current_observation_));
+
 }
 
 LeggedController::~LeggedController()
