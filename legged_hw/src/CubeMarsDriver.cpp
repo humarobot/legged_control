@@ -55,7 +55,7 @@ void CubeMarsDriver::Update(){
         _index=0;
         for(int i=0;i<12;i++) _frame_num[i]=0;
     } 
-    StatisticPrinter(_index);
+    // StatisticPrinter(_index);
     //TransReceive
     CanSendRecOnce();
     // Sleep
@@ -363,7 +363,7 @@ void CubeMarsDriver::StatisticPrinter(int index){
 		float conn[12]={0};
 		for(int i=0;i<12;i++){
 			conn[i]=(float)_frame_num[i]/4.99;
-			std::cout<<"Motor "<<i+1<<" connectivity is "<<conn[i]<<"%"<<std::endl;
+			std::cout<<"Quadruped Motor "<<i+1<<" connectivity is "<<conn[i]<<"%"<<std::endl;
 		}
 		std::cout<<"----------------------------------------------"<<std::endl;
 

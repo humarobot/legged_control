@@ -261,6 +261,7 @@ void LionArmedHW::enableArmMotors(){
 
 void LionArmedHW::read(const ros::Time& time, const ros::Duration& period)
 {
+  // arm_enabled_flag=false;
   if(arm_enabled_flag){
     if(!bExit){
       //Event polling, polling callback events, event triggering calls to the corresponding callback function
@@ -272,15 +273,15 @@ void LionArmedHW::read(const ros::Time& time, const ros::Duration& period)
           // pController->setCurrent(actuator.actuatorID,1.0);
       }
       //安全起见设置电机默认指令
-      std::vector<std::string> names = hybrid_joint_interface_.getNames();
-      for (const auto& name : names)
-      {
-        HybridJointHandle handle = hybrid_joint_interface_.getHandle(name);
-        handle.setFeedforward(0.);
-        handle.setVelocityDesired(0.);
-        handle.setKd(0.);
-        handle.setKp(0.);
-      }
+      // std::vector<std::string> names = hybrid_joint_interface_.getNames();
+      // for (const auto& name : names)
+      // {
+      //   HybridJointHandle handle = hybrid_joint_interface_.getHandle(name);
+      //   handle.setFeedforward(0.);
+      //   handle.setVelocityDesired(0.);
+      //   handle.setKd(0.);
+      //   handle.setKp(0.);
+      // }
       //设置默认关节角度为当前角度
       if(mode_==Actuator::Mode_Profile_Pos){
         for(int i=0;i<6;i++){
@@ -289,19 +290,19 @@ void LionArmedHW::read(const ros::Time& time, const ros::Duration& period)
         }  
       }
 
-      count++;
-      if(count==500){ //打印数据完整性
-        cout<<"Motor1 current: "<<(float)cur1_count/500.0<<" vel: "<<(float)vel1_count/500.0<<" pos: "<<(float)pos1_count/500.0<<endl;
-        cout<<"Motor2 current: "<<(float)cur2_count/500.0<<" vel: "<<(float)vel2_count/500.0<<" pos: "<<(float)pos2_count/500.0<<endl;
-        cout<<"Motor3 current: "<<(float)cur3_count/500.0<<" vel: "<<(float)vel3_count/500.0<<" pos: "<<(float)pos3_count/500.0<<endl;
-        cout<<"Motor4 current: "<<(float)cur4_count/500.0<<" vel: "<<(float)vel4_count/500.0<<" pos: "<<(float)pos4_count/500.0<<endl;
-        cout<<"Motor5 current: "<<(float)cur5_count/500.0<<" vel: "<<(float)vel5_count/500.0<<" pos: "<<(float)pos5_count/500.0<<endl;
-        cout<<"Motor6 current: "<<(float)cur6_count/500.0<<" vel: "<<(float)vel6_count/500.0<<" pos: "<<(float)pos6_count/500.0<<endl;
-        count=0;
-        cur1_count=cur2_count=cur3_count=cur4_count=cur5_count=cur6_count=0;
-        vel1_count=vel2_count=vel3_count=vel4_count=vel5_count=vel6_count=0;
-        pos1_count=pos2_count=pos3_count=pos4_count=pos5_count=pos6_count=0;
-      }
+      // count++;
+      // if(count==500){ //打印数据完整性
+      //   // cout<<"Arm Motor1 connectivity current: "<<(float)cur1_count/5.0<<"% vel: "<<(float)vel1_count/5.0<<"% pos: "<<(float)pos1_count/5.0<<"%"<<endl;
+      //   // cout<<"Arm Motor2 connectivity current: "<<(float)cur2_count/5.0<<"% vel: "<<(float)vel2_count/5.0<<"% pos: "<<(float)pos2_count/5.0<<"%"<<endl;
+      //   // cout<<"Arm Motor3 connectivity current: "<<(float)cur3_count/5.0<<"% vel: "<<(float)vel3_count/5.0<<"% pos: "<<(float)pos3_count/5.0<<"%"<<endl;
+      //   // cout<<"Arm Motor4 connectivity current: "<<(float)cur4_count/5.0<<"% vel: "<<(float)vel4_count/5.0<<"% pos: "<<(float)pos4_count/5.0<<"%"<<endl;
+      //   // cout<<"Arm Motor5 connectivity current: "<<(float)cur5_count/5.0<<"% vel: "<<(float)vel5_count/5.0<<"% pos: "<<(float)pos5_count/5.0<<"%"<<endl;
+      //   // cout<<"Arm Motor6 connectivity current: "<<(float)cur6_count/5.0<<"% vel: "<<(float)vel6_count/5.0<<"% pos: "<<(float)pos6_count/5.0<<"%"<<endl;
+      //   count=0;
+      //   cur1_count=cur2_count=cur3_count=cur4_count=cur5_count=cur6_count=0;
+      //   vel1_count=vel2_count=vel3_count=vel4_count=vel5_count=vel6_count=0;
+      //   pos1_count=pos2_count=pos3_count=pos4_count=pos5_count=pos6_count=0;
+      // }
     }
     else{ //退出程序时失能电机
       cout << "MintaSCA:: Disable motors ... "<<endl;
@@ -325,26 +326,6 @@ void LionArmedHW::read(const ros::Time& time, const ros::Duration& period)
     joint_data_[14].pos_ = (pos[1]+pos[2])/18.0*3.1415927;
     joint_data_[14].vel_ = (vel[1]+vel[2])/18.0*3.1415927;
   }
-  // if(count==0)
-  //   cout<<joint_data_[17].pos_<<" "<<joint_data_[17].vel_<<" "<<joint_data_[17].tau_<<endl;
-  // for (int i = 0; i < 12; ++i)
-  // {
-  //   joint_data_[i].pos_ = low_state_.motorState[i].q;
-  //   joint_data_[i].vel_ = low_state_.motorState[i].dq;
-  //   joint_data_[i].tau_ = low_state_.motorState[i].tauEst;
-  // }
-  // std::cout<<"read"<<std::endl;
-
-  // imu_data_.ori[0] = low_state_.imu.quaternion[1];
-  // imu_data_.ori[1] = low_state_.imu.quaternion[2];
-  // imu_data_.ori[2] = low_state_.imu.quaternion[3];
-  // imu_data_.ori[3] = low_state_.imu.quaternion[0];
-  // imu_data_.angular_vel[0] = low_state_.imu.gyroscope[0];
-  // imu_data_.angular_vel[1] = low_state_.imu.gyroscope[1];
-  // imu_data_.angular_vel[2] = low_state_.imu.gyroscope[2];
-  // imu_data_.linear_acc[0] = low_state_.imu.accelerometer[0];
-  // imu_data_.linear_acc[1] = low_state_.imu.accelerometer[1];
-  // imu_data_.linear_acc[2] = low_state_.imu.accelerometer[2];
 
   // for (size_t i = 0; i < CONTACT_SENSOR_NAMES.size(); ++i)
   //   contact_state_[i] = low_state_.footForce[i] > contact_threshold_;
@@ -363,52 +344,53 @@ void LionArmedHW::read(const ros::Time& time, const ros::Duration& period)
 
 void LionArmedHW::write(const ros::Time& time, const ros::Duration& period)
 {
+  // arm_enabled_flag=false;
   if(arm_enabled_flag){
     double joint_cur[18];
-    //计算机械臂电流
-    for(int i=0;i<6;i++){
-      joint_cur[i+12] = joint_data_[i+12].ff_+ (joint_data_[i+12].pos_des_ - joint_data_[i+12].pos_)*joint_data_[i+12].kp_
-                    +(joint_data_[i+12].vel_des_ - joint_data_[i+12].vel_) * joint_data_[i+12].kd_;
-      //设置电流上下限
-      if(joint_cur[i+12] > max_cur_){
-        joint_cur[i+12] = max_cur_;
-      }else if(joint_cur[i+12] < -max_cur_){
-        joint_cur[i+12] = -max_cur_;
-      }
-    }
+    // 计算机械臂电流
+    // for(int i=0;i<6;i++){
+    //   joint_cur[i+12] = joint_data_[i+12].ff_+ (joint_data_[i+12].pos_des_ - joint_data_[i+12].pos_)*joint_data_[i+12].kp_
+    //                 +(joint_data_[i+12].vel_des_ - joint_data_[i+12].vel_) * joint_data_[i+12].kd_;
+    //   //设置电流上下限
+    //   if(joint_cur[i+12] > max_cur_){
+    //     joint_cur[i+12] = max_cur_;
+    //   }else if(joint_cur[i+12] < -max_cur_){
+    //     joint_cur[i+12] = -max_cur_;
+    //   }
+    // }
     //打印信息
-    if(count%500==0) {
-      cout<<"joint1:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[12].pos_des_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[12].pos_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[12].tau_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[12].vel_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[12]<<endl;
-      cout<<"joint2:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[13].pos_des_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[13].pos_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[13].tau_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[13].vel_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[13]<<endl;
-      cout<<"joint3:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[14].pos_des_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[14].pos_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[14].tau_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[14].vel_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[14]<<endl;
-      cout<<"joint4:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[15].pos_des_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[15].pos_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[15].tau_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[15].vel_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[15]<<endl;
-      cout<<"joint5:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[16].pos_des_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[16].pos_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[16].tau_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[16].vel_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[16]<<endl;
-      cout<<"joint6:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[17].pos_des_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[17].pos_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[17].tau_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[17].vel_<<" "
-      <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[17]<<endl;
-    }
+    // if(count%200==0) {
+    //   cout<<"joint1:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[12].pos_des_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[12].pos_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[12].tau_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[12].vel_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[12]<<endl;
+    //   cout<<"joint2:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[13].pos_des_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[13].pos_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[13].tau_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[13].vel_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[13]<<endl;
+    //   cout<<"joint3:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[14].pos_des_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[14].pos_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[14].tau_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[14].vel_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[14]<<endl;
+    //   cout<<"joint4:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[15].pos_des_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[15].pos_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[15].tau_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[15].vel_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[15]<<endl;
+    //   cout<<"joint5:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[16].pos_des_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[16].pos_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[16].tau_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[16].vel_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[16]<<endl;
+    //   cout<<"joint6:"<<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[17].pos_des_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[17].pos_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[17].tau_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_data_[17].vel_<<" "
+    //   <<right<<setw(8)<<fixed<<setprecision(3)<<joint_cur[17]<<endl;
+    // }
     
     //设置关节角度上下限
     auto clip = [](double num, double up, double low){
@@ -420,7 +402,7 @@ void LionArmedHW::write(const ros::Time& time, const ros::Duration& period)
     }
     
     //发送机械臂电机控制指令
-    //3关节的运动和2 3两个电机都有关系，joint3=motor2+motor3, joint2=motor2，motor3=joint3-joint2
+    // 3关节的运动和2 3两个电机都有关系，joint3=motor2+motor3, joint2=motor2，motor3=joint3-joint2
     for(auto actuator: arm_uID_array_){
       if(mode_==Actuator::Mode_Profile_Pos){
         // cout<<joint_data_[11+actuator.actuatorID].pos_des_<<" ";
@@ -435,14 +417,6 @@ void LionArmedHW::write(const ros::Time& time, const ros::Duration& period)
     }
   }
 
-  // for (int i = 0; i < 12; ++i)
-  // {
-  //   low_cmd_.motorCmd[i].q = joint_data_[i].pos_des_;
-  //   low_cmd_.motorCmd[i].dq = joint_data_[i].vel_des_;
-  //   low_cmd_.motorCmd[i].Kp = joint_data_[i].kp_;
-  //   low_cmd_.motorCmd[i].Kd = joint_data_[i].kd_;
-  //   low_cmd_.motorCmd[i].tau = joint_data_[i].ff_;
-  // }
   
   // std::cout<<"write"<<std::endl;
   // safety_->PositionLimit(low_cmd_);

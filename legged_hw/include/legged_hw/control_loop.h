@@ -98,5 +98,7 @@ private:
   // Abstract Hardware Interface for your robot
   std::shared_ptr<LeggedHW> hardware_interface_;
   CubeMarsDriver can_driver_{hardware_interface_->joint_data_,loop_hz_};
+
+  int loop_counter_{0};
 };
 }  // namespace legged

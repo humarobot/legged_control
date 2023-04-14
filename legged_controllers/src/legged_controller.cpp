@@ -133,6 +133,7 @@ void LeggedController::starting(const ros::Time& time)
   //Arm inverse kinematics
   inverseKine();
 
+  /****************************End Effector move test ************************/
   // ros::NodeHandle nh2;
   // auto armReferenceCallback = [this](const geometry_msgs::PoseStampedConstPtr& msg) {
   //   // std::cout<<"callback"<<std::endl;
@@ -140,7 +141,10 @@ void LeggedController::starting(const ros::Time& time)
   //   inverseKine(msg);
   // };
   // armRefSubscriber_ = nh2.subscribe<geometry_msgs::PoseStamped>("legged_robot_EE_pose", 1, armReferenceCallback);
-  
+  /****************************************************************************/
+
+
+  /****************Chicken head mode test*********************/
   ros::NodeHandle nh3;
   counter_ = 0;
   auto basePoseCallback = [this](const nav_msgs::OdometryConstPtr& msg) {
@@ -163,6 +167,7 @@ void LeggedController::starting(const ros::Time& time)
                                              
   };
   odomSubscriber_ = nh3.subscribe<nav_msgs::Odometry>("odom",1,basePoseCallback);
+  /***********************************************************/
   
 }
 
@@ -210,7 +215,7 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
 
   
   for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j){
-    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 4, 2.5, torque(j));
+    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 4, 2, 0.2*torque(j));
 
   }
   // std::cout<<std::endl;
@@ -230,11 +235,11 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
   arm_joint_handles_[2].setCommand(arm_q_[2],0,500,3,0.0);
   arm_joint_handles_[3].setCommand(arm_q_[3],0,80,0,0.0);
   arm_joint_handles_[4].setCommand(arm_q_[4],0,80,0,0.0);
-  arm_joint_handles_[5].setCommand(arm_q_[5],0,80,0,0.0);
+  arm_joint_handles_[5].setCommand(-arm_q_[5],0,80,0,0.0);
   // std::cout<<arm_q_.transpose()<<std::endl;
 
   // Visualization
-  visualizer_->update(current_observation_, mpc_mrt_interface_->getPolicy(), mpc_mrt_interface_->getCommand());
+  // visualizer_->update(current_observation_, mpc_mrt_interface_->getPolicy(), mpc_mrt_interface_->getCommand());
 
   // Publish the observation. Only needed for the command interface
   observation_publisher_.publish(ros_msg_conversions::createObservationMsg(current_observation_));
@@ -335,7 +340,7 @@ void LeggedCheaterController::setupStateEstimate(LeggedInterface& legged_interfa
 }
 
 void LeggedController::setupArmController(){
-  const std::string urdf_filename = "/home/lqk/ocs2_ws/src/legged_control/inverse_kinematics_pinocchio/arm.urdf";
+  const std::string urdf_filename = "/home/quad/ocs2_ws/src/legged_control/inverse_kinematics_pinocchio/arm.urdf";
   pinocchio::urdf::buildModel(urdf_filename,arm_model_);
   arm_data_ = pinocchio::Data(arm_model_);
   std::cout<<"Arm controller's model name:"<<arm_model_.name<<std::endl;
@@ -405,7 +410,7 @@ void LeggedController::inverseKine(const geometry_msgs::PoseStampedConstPtr& msg
 
 void LeggedController::inverseKine(){
   const int JOINT_ID = 6;
-  const pinocchio::SE3 oMdes(Eigen::Matrix3d::Identity(), Eigen::Vector3d(0.2, 0., 0.2));
+  const pinocchio::SE3 oMdes(Eigen::Matrix3d::Identity(), Eigen::Vector3d(0.4, 0., 0.4));
 
   Eigen::VectorXd q = pinocchio::neutral(arm_model_);
   const double eps = 1e-4;
@@ -457,7 +462,7 @@ void LeggedController::inverseKine(){
 
 void LeggedController::inverseKineWBC(const Eigen::Vector3d& base_pos,const Eigen::Quaterniond& quat){
   const int JOINT_ID = 6;
-  Eigen::Vector3d pos_with_base(0.5,0.,0.4);
+  Eigen::Vector3d pos_with_base(0.4,0.,0.4);
   Eigen::Matrix3d R = quat.normalized().toRotationMatrix().transpose();
   const pinocchio::SE3 oMdes(R, R*(pos_with_base - base_pos));
 

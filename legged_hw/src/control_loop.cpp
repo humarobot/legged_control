@@ -6,6 +6,7 @@
 
 namespace legged
 {
+
 LeggedHWLoop::LeggedHWLoop(ros::NodeHandle& nh, std::shared_ptr<LeggedHW> hardware_interface)
   : nh_(nh), hardware_interface_(std::move(hardware_interface))
 {
@@ -53,10 +54,10 @@ LeggedHWLoop::LeggedHWLoop(ros::NodeHandle& nh, std::shared_ptr<LeggedHW> hardwa
 
     }
   });
-  sched_param sched2{ .sched_priority = thread_priority };
-  if (pthread_setschedparam(can_thread_.native_handle(), SCHED_FIFO, &sched2) != 0)
-    ROS_WARN("Failed to set threads priority (one possible reason could be that the user and the group permissions "
-             "are not set properly.).\n");
+  // sched_param sched2{ .sched_priority = thread_priority };
+  // if (pthread_setschedparam(can_thread_.native_handle(), SCHED_FIFO, &sched2) != 0)
+  //   ROS_WARN("Failed to set threads priority (one possible reason could be that the user and the group permissions "
+  //            "are not set properly.).\n");
 }
 
 void LeggedHWLoop::update()
@@ -80,7 +81,8 @@ void LeggedHWLoop::update()
 
   // Input
   // get the hardware's state
-  hardware_interface_->read(ros::Time::now(), elapsed_time_);
+  if(loop_counter_==10)
+    hardware_interface_->read(ros::Time::now(), elapsed_time_);
 
   // Control
   // let the controller compute the new command (via the controller manager)
@@ -88,11 +90,16 @@ void LeggedHWLoop::update()
 
   // Output
   // send the new command to hardware
-  hardware_interface_->write(ros::Time::now(), elapsed_time_);
+  if(loop_counter_==10)
+    hardware_interface_->write(ros::Time::now(), elapsed_time_);
 
   // Sleep
   const auto sleep_till = current_time + duration_cast<clock::duration>(desired_duration);
   std::this_thread::sleep_until(sleep_till);
+
+  if(loop_counter_==10) loop_counter_=0;
+
+  loop_counter_++;
 }
 
 LeggedHWLoop::~LeggedHWLoop()
