@@ -6,8 +6,9 @@
 
     <rosparam file="$(find lion_armed_hw)/config/default.yaml" command="load"/>
 
-    <node name="lion_armed_hw" pkg="lion_armed_hw" type="lion_armed_hw" output="screen">
+    <node name="lion_armed_hw" pkg="lion_armed_hw" type="lion_armed_hw" output="screen"/>
+    <!-- <include file="$(find legged_controllers)/launch/load_controller.launch" /> -->
+    <node name="rqt_controller_manager" pkg="rqt_controller_manager" type="rqt_controller_manager"/>
 
-    </node>
 
 </launch>

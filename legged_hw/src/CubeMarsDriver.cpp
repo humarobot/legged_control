@@ -315,10 +315,10 @@ void CubeMarsDriver::CleanMotorsBuffer(){
 }
 
 void CubeMarsDriver::CleanUp(){
-	std::cout<<"Entering Cleann Up"<<std::endl;
+	std::cout<<"CubeMarsDriver: Entering Clean Up"<<std::endl;
 	CleanMotorsBuffer();
 	DisableMotors();
-	std::cout<<"Clean Done!!!!"<<std::endl;
+	std::cout<<"CubeMarsDriver: Clean Done!!!!"<<std::endl;
 }
 
 void CubeMarsDriver::RawToMsg(int motor_id,struct can_frame& frame){

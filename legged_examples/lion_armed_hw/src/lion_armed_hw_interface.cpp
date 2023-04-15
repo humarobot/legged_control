@@ -10,15 +10,6 @@ namespace legged
   int pos1_count,pos2_count,pos3_count,pos4_count,pos5_count,pos6_count;
   double cur[6],vel[6],pos[6];
   
-void LionArmedHW::processSignal(int sign)
-{
-
-    // ActuatorController::getInstance()->disableAllActuators();
-    // this_thread::sleep_for(std::chrono::milliseconds(200));
-    bExit = true;
-}
-
-bool LionArmedHW::bExit = false;
 
 void paramFeedback(ActuatorController::UnifiedID uID,uint8_t paramType,double paramValue){
   // cout<<"uID: "<<(int)uID.actuatorID<<endl;
@@ -192,7 +183,8 @@ bool LionArmedHW::init(ros::NodeHandle& root_nh, ros::NodeHandle& robot_hw_nh)
   //Arm motor enable
   enableArmMotors();
   count = 0;
-  //IMU
+  //IMU 
+  // TODO : IMU
   auto imu_callback = [this](const sensor_msgs::Imu::ConstPtr& msg) {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     imu_data_.ori[0] = msg->orientation.x;
@@ -228,7 +220,7 @@ void LionArmedHW::enableArmMotors(){
   // mode_= Actuator::Mode_Cur; 
   mode_ = Actuator::Mode_Profile_Pos;
   //Associate program interrupt signals and call processSignal when you end the program with ctrl-c
-  signal(SIGINT,processSignal);
+  // signal(SIGINT,processSignal);
   //Initialize the controller
   ActuatorController * pController_ = ActuatorController::initController();
   //ec Define an error type, ec==0x00 means no error, ec will be passed to pcontroller-> lookupActuators(ec) by reference,
@@ -262,7 +254,7 @@ void LionArmedHW::enableArmMotors(){
 void LionArmedHW::read(const ros::Time& time, const ros::Duration& period)
 {
   if(arm_enabled_flag){
-    if(!bExit){
+    if(ros::ok()){
       //Event polling, polling callback events, event triggering calls to the corresponding callback function
       ActuatorController::processEvents();
       //Asynchronous request executor current, velocity, poistion, and when the request returns,
@@ -312,7 +304,7 @@ void LionArmedHW::read(const ros::Time& time, const ros::Duration& period)
       this_thread::sleep_for(std::chrono::seconds(3));
       ActuatorController::getInstance()->disableAllActuators();
       this_thread::sleep_for(std::chrono::milliseconds(200));
-      bExit=false;
+
       arm_enabled_flag=false;
     }
     //转存关节信息
