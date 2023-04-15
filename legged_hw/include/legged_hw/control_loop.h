@@ -31,10 +31,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *******************************************************************************/
 
-//
-// Created by qiayuan on 12/30/20.
-//
-
 #pragma once
 
 #include "legged_hw/hardware_interface.h"

@@ -11,13 +11,11 @@
 #include "sensor_msgs/Imu.h"
 #include <mutex>
 
-
 namespace legged
 {
 
-  void paramFeedback(ActuatorController::UnifiedID uID,uint8_t paramType,double paramValue);
+void paramFeedback(ActuatorController::UnifiedID uID, uint8_t paramType, double paramValue);
 const std::vector<std::string> CONTACT_SENSOR_NAMES = { "RF_FOOT", "LF_FOOT", "RH_FOOT", "LH_FOOT" };
-
 
 class LionArmedHW : public LeggedHW
 {
@@ -55,7 +53,6 @@ public:
 
   ~LionArmedHW();
 
-
 private:
   bool setupJoints();
 
@@ -67,40 +64,34 @@ private:
 
   static void processSignal(int sign);
 
-
-
-//   std::shared_ptr<UNITREE_LEGGED_SDK::UDP> udp_;
-//   std::shared_ptr<UNITREE_LEGGED_SDK::Safety> safety_;
+  //   std::shared_ptr<UNITREE_LEGGED_SDK::UDP> udp_;
+  //   std::shared_ptr<UNITREE_LEGGED_SDK::Safety> safety_;
   UNITREE_LEGGED_SDK::LowState low_state_{};
   UNITREE_LEGGED_SDK::LowCmd low_cmd_{};
-
 
   LionImuData imu_data_{};
   bool contact_state_[4]{};
 
   int power_limit_{};
   int contact_threshold_{};
-// 机械臂
-  ActuatorController * pController_;
+  // 机械臂
+  ActuatorController* pController_;
   std::vector<ActuatorController::UnifiedID> arm_uID_array_;
   static bool bExit;
-  bool arm_enabled_flag{false};
+  bool arm_enabled_flag{ false };
   ActuatorMode mode_;
-  double max_cur_=3.0;
-  double joint_up_limit_[6] = {  15., 18., 24.,  18.,  9.,  18.};
-  double joint_low_limit_[6] = {-15.,  0.,  0., -18., -9., -18.};
+  double max_cur_ = 3.0;
+  double joint_up_limit_[6] = { 15., 18., 24., 18., 9., 18. };
+  double joint_low_limit_[6] = { -15., 0., 0., -18., -9., -18. };
 
-  //IMU
+  // IMU
   ros::Subscriber sub_;
   std::mutex imu_mutex_;
-
 };
 
-extern int count,cur1_count,cur2_count,cur3_count,cur4_count,cur5_count,cur6_count;
-extern int vel1_count,vel2_count,vel3_count,vel4_count,vel5_count,vel6_count;
-extern int pos1_count,pos2_count,pos3_count,pos4_count,pos5_count,pos6_count;
-extern double cur[6],vel[6],pos[6];
+extern int count, cur1_count, cur2_count, cur3_count, cur4_count, cur5_count, cur6_count;
+extern int vel1_count, vel2_count, vel3_count, vel4_count, vel5_count, vel6_count;
+extern int pos1_count, pos2_count, pos3_count, pos4_count, pos5_count, pos6_count;
+extern double cur[6], vel[6], pos[6];
 
 }  // namespace legged
-
-

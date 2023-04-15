@@ -1,7 +1,4 @@
 
-//
-// Created by qiayuan on 1/24/22.
-//
 #include "legged_hw/control_loop.h"
 
 namespace legged
@@ -47,10 +44,10 @@ LeggedHWLoop::LeggedHWLoop(ros::NodeHandle& nh, std::shared_ptr<LeggedHW> hardwa
   can_thread_ = std::thread([&]() {
     while (can_running_)
     {
-      if (can_running_){
+      if (can_running_)
+      {
         can_driver_.Update();
       }
-
     }
   });
   sched_param sched2{ .sched_priority = thread_priority };
@@ -97,7 +94,7 @@ void LeggedHWLoop::update()
 
 LeggedHWLoop::~LeggedHWLoop()
 {
-  std::cout<<"!!!!!!!!!!!!!!!!!!!!!!!destruct leggedHWLoop"<<std::endl;
+  std::cout << "!!!!!!!!!!!!!!!!!!!!!!!destruct leggedHWLoop" << std::endl;
   loop_running_ = false;
   can_running_ = false;
   if (loop_thread_.joinable())

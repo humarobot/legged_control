@@ -1,8 +1,4 @@
 
-//
-// Created by qiayuan on 6/24/22.
-//
-
 #pragma once
 
 #include <vector>

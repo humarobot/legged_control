@@ -451,6 +451,7 @@ void LionArmedHW::write(const ros::Time& time, const ros::Duration& period)
 
 bool LionArmedHW::setupJoints()
 {
+  //Quadruped
   for (const auto& joint : urdf_model_->joints_)
   {
     int leg_index, joint_index;

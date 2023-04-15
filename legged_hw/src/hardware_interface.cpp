@@ -1,8 +1,4 @@
 
-//
-// Created by qiayuan on 1/24/22.
-//
-
 #include "legged_hw/hardware_interface.h"
 
 namespace legged
