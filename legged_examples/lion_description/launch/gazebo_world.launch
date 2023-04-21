@@ -13,6 +13,7 @@
   </include>
 
   <include file="$(find legged_controllers)/launch/load_controller.launch" />
+  <include file="$(find lion_joy)/launch/lion_joy.launch" />
 
   <!-- push robot_description to factory and spawn robot in gazebo -->
   <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" clear_params="true"
@@ -20,7 +21,7 @@
   <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find lion_description)/rviz/lion.rviz" /> -->
   <!-- <node name="rqt_controller_manager" pkg="rqt_controller_manager"
   type="rqt_controller_manager"/> -->
-  <node name="rqt_robot_steering" pkg="rqt_robot_steering" type="rqt_robot_steering" />
+  <!-- <node name="rqt_robot_steering" pkg="rqt_robot_steering" type="rqt_robot_steering" /> -->
 
   <arg name="node_start_delay" default="3.5" /> 
   <node name="start_controller_manager" pkg="controller_manager" type="controller_manager" output="screen"

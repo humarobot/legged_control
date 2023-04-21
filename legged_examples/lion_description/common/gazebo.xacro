@@ -55,8 +55,8 @@
         <self_collide>1</self_collide>
     </gazebo>
     <gazebo reference="LF_FOOT">
-        <mu1>0.9</mu1>
-        <mu2>0.9</mu2>
+        <mu1>0.3</mu1>
+        <mu2>0.3</mu2>
         <self_collide>1</self_collide>
         <material>Gazebo/DarkGrey</material>
         <kp value="1000000.0"/>
@@ -83,8 +83,8 @@
         <self_collide>1</self_collide>
     </gazebo>
     <gazebo reference="RF_FOOT">
-        <mu1>0.9</mu1>
-        <mu2>0.9</mu2>
+        <mu1>0.3</mu1>
+        <mu2>0.3</mu2>
         <self_collide>1</self_collide>
         <material>Gazebo/DarkGrey</material>
         <kp value="1000000.0"/>
@@ -111,8 +111,8 @@
         <self_collide>1</self_collide>
     </gazebo>
     <gazebo reference="LH_FOOT">
-        <mu1>0.9</mu1>
-        <mu2>0.9</mu2>
+        <mu1>0.3</mu1>
+        <mu2>0.3</mu2>
         <self_collide>1</self_collide>
         <material>Gazebo/DarkGrey</material>
         <kp value="1000000.0"/>
@@ -139,8 +139,8 @@
         <self_collide>1</self_collide>
     </gazebo>
     <gazebo reference="RH_FOOT">
-        <mu1>0.9</mu1>
-        <mu2>0.9</mu2>
+        <mu1>0.3</mu1>
+        <mu2>0.3</mu2>
         <self_collide>1</self_collide>
         <material>Gazebo/DarkGrey</material>
         <kp value="1000000.0"/>
