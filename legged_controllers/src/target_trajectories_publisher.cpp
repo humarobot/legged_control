@@ -11,6 +11,8 @@
 
 using namespace legged;
 
+vector_t current_pose_ = vector_t::Zero(6);
+
 namespace
 {
 scalar_t TARGET_DISPLACEMENT_VELOCITY;
@@ -39,9 +41,9 @@ TargetTrajectories targetPoseToTargetTrajectories(const vector_t& target_pose, c
 
   // desired state trajectory
   vector_t current_pose = observation.state.segment<6>(6);
-  // current_pose(2) = COM_HEIGHT;
-  // current_pose(4) = 0;
-  // current_pose(5) = 0;
+  current_pose(2) = COM_HEIGHT;
+  current_pose(4) = 0;
+  current_pose(5) = 0;
   vector_array_t state_trajectory(2, vector_t::Zero(observation.state.size()));
   state_trajectory[0] << vector_t::Zero(6), current_pose, DEFAULT_JOINT_STATE;
   state_trajectory[1] << vector_t::Zero(6), target_pose, DEFAULT_JOINT_STATE;
@@ -60,7 +62,7 @@ TargetTrajectories goalToTargetTrajectories(const vector_t& goal, const SystemOb
     target(0) = goal(0);
     target(1) = goal(1);
     target(2) = goal(2);
-    target(3) = current_pose(3)+angles::shortest_angular_distance(current_pose(3), goal(3));
+    target(3) = current_pose(3) + angles::shortest_angular_distance(current_pose(3), goal(3));
     target(4) = goal(4);
     target(5) = goal(5);
     return target;
@@ -71,17 +73,21 @@ TargetTrajectories goalToTargetTrajectories(const vector_t& goal, const SystemOb
 
 TargetTrajectories cmdVelToTargetTrajectories(const vector_t& cmd_vel, const SystemObservation& observation)
 {
-  const vector_t current_pose = observation.state.segment<6>(6);
-  const Eigen::Matrix<scalar_t, 3, 1> zyx = current_pose.tail(3);
+  // if cmd_vel(0),cmd_vel(1),cmd_vel(3) is not near zero, update current_pose_
+  if (std::abs(cmd_vel(0)) > 1e-3 || std::abs(cmd_vel(1)) > 1e-3 || std::abs(cmd_vel(3)) > 1e-3)
+  {
+    current_pose_ = observation.state.segment<6>(6);
+  }
+  const Eigen::Matrix<scalar_t, 3, 1> zyx = current_pose_.tail(3);
   vector_t cmd_vel_rot = getRotationMatrixFromZyxEulerAngles(zyx) * cmd_vel.head(3);
 
   const scalar_t time_to_target = TIME_TO_TARGET;
   const vector_t target_pose = [&]() {
     vector_t target(6);
-    target(0) = current_pose(0) + cmd_vel_rot(0) * time_to_target;
-    target(1) = current_pose(1) + cmd_vel_rot(1) * time_to_target;
+    target(0) = current_pose_(0) + cmd_vel_rot(0) * time_to_target;
+    target(1) = current_pose_(1) + cmd_vel_rot(1) * time_to_target;
     target(2) = COM_HEIGHT;
-    target(3) = current_pose(3) + cmd_vel(3) * time_to_target;
+    target(3) = current_pose_(3) + cmd_vel(3) * time_to_target;
     target(4) = 0;
     target(5) = 0;
     return target;
