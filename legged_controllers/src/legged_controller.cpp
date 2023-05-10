@@ -95,10 +95,12 @@ void LeggedController::starting(const ros::Time& time)
 
   TargetTrajectories target_trajectories({ current_observation_.time }, { current_observation_.state },
                                          { current_observation_.input });
+  ModeSchedule default_mode_schedule({ current_observation_.time }, { current_observation_.mode, current_observation_.mode });
 
   // Set the first observation and command and wait for optimization to finish
   mpc_mrt_interface_->setCurrentObservation(current_observation_);
   mpc_mrt_interface_->getReferenceManager().setTargetTrajectories(target_trajectories);
+  mpc_mrt_interface_->getReferenceManager().setModeSchedule(default_mode_schedule);
   ROS_INFO_STREAM("Waiting for the initial policy ...");
   while (!mpc_mrt_interface_->initialPolicyReceived() && ros::ok())
   {
@@ -157,7 +159,7 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
 
   //PID controller
   for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j){
-    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 4, 2.5, 0.2*torque(j));
+    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 4, 2.5, torque(j));
 
   }
 
