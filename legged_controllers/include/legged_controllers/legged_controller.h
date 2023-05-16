@@ -81,8 +81,10 @@ protected:
 
   std::shared_ptr<LeggedRobotVisualizer> visualizer_;
   ros::Publisher observation_publisher_;
+  ros::Publisher wbc_publisher_;
 
   SystemObservation current_observation_;
+  SystemObservation wbc_resault_;
   std::vector<HybridJointHandle> hybrid_joint_handles_;
   std::vector<HybridJointHandle> arm_joint_handles_;
 

@@ -12,6 +12,7 @@
 #include <ocs2_centroidal_model/CentroidalModelInfo.h>
 #include <ocs2_robotic_tools/common/RobotInterface.h>
 #include <ocs2_robotic_tools/end_effector/EndEffectorKinematics.h>
+#include <ocs2_core/soft_constraint/StateSoftConstraint.h>
 #include <ocs2_ddp/DDP_Settings.h>
 #include <ocs2_mpc/MPC_Settings.h>
 #include <ocs2_sqp/MultipleShootingSettings.h>
@@ -105,6 +106,10 @@ protected:
   std::unique_ptr<StateInputConstraint> getFootsTrackConstraint(const EndEffectorKinematics<scalar_t>& eeKinematics,
                                                                 size_t contactPointIndex);
   std::unique_ptr<StateInputConstraint> getZeroForceConstraint(size_t contactPointIndex);
+  std::unique_ptr<StateInputConstraint> getZeroWrenchConstraint(size_t contactPointIndex);
+  std::unique_ptr<StateCost> getFixPositionConstraint();
+  std::unique_ptr<StateCost> getArmEndEffectorConstraint(const EndEffectorKinematics<scalar_t>& eeKinematics);
+  std::unique_ptr<StateInputCost> getArmZeroVelocityConstraint();
   ModelSettings modelSettings_;
   mpc::Settings mpcSettings_;
   ddp::Settings ddpSettings_;

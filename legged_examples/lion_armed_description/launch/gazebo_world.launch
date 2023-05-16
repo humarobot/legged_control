@@ -1,0 +1,30 @@
+<launch>
+
+  <rosparam file="$(find legged_gazebo)/config/default.yaml" command="load" />
+
+  <param name="legged_robot_description"
+    command="$(find xacro)/xacro $(find lion_armed_description)/robot.xacro" />
+  <param name="robot_description"
+    command="$(find xacro)/xacro $(find lion_armed_description)/robot.xacro" />
+
+  <!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find lion_armed_description)/world.world" />
+    <arg name="paused" default="false" />
+  </include>
+
+  <include file="$(find legged_controllers)/launch/load_controller.launch" />
+  <include file="$(find lion_joy)/launch/lion_joy.launch" />
+
+  <!-- push robot_description to factory and spawn robot in gazebo -->
+  <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" clear_params="true"
+    args="-z 0.7 -param legged_robot_description -urdf -model lion_armed" output="screen" />
+  <node name="rqt_controller_manager" pkg="rqt_controller_manager"
+    type="rqt_controller_manager"/>
+  <arg name="node_start_delay" default="3.5" />
+  <!-- <node name="start_controller_manager" pkg="controller_manager" type="controller_manager"
+    output="screen"
+    args="start controllers/legged_controller"
+    launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " /> -->
+
+</launch>

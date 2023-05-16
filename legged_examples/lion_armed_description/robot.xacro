@@ -648,6 +648,7 @@
         link="shoulder_link" />
       <axis
         xyz="0 0 -1" />
+      <dynamics damping="0.3"/>
       <limit
         lower="-2.618"
         upper="2.618"
@@ -701,6 +702,7 @@
         link="upper_arm_link" />
       <axis
         xyz="0 1 0" />
+      <dynamics damping="0.2"/>
       <limit
         lower="0"
         upper="3.665"
@@ -753,6 +755,7 @@
         link="elbow_link" />
       <axis
         xyz="0 -1 0" />
+      <dynamics damping="0.2"/>
       <limit
         lower="0"
         upper="4.188"

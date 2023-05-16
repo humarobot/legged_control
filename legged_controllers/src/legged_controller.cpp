@@ -62,9 +62,14 @@ bool LeggedController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHand
   HybridJointInterface* hybrid_joint_interface = robot_hw->get<HybridJointInterface>();
   //Legs handles
   std::vector<std::string> joint_names{ "LF_HAA", "LF_HFE", "LF_KFE", "LH_HAA", "LH_HFE", "LH_KFE",
-                                        "RF_HAA", "RF_HFE", "RF_KFE", "RH_HAA", "RH_HFE", "RH_KFE"};
+                                        "RF_HAA", "RF_HFE", "RF_KFE", "RH_HAA", "RH_HFE", "RH_KFE",
+                                        "joint1", "joint2", "joint3", "joint4", "joint5", "joint6"};
   for (const auto& joint_name : joint_names)
     hybrid_joint_handles_.push_back(hybrid_joint_interface->getHandle(joint_name));
+  // //Arm handles
+  // std::vector<std::string> arm_joint_names{"joint1", "joint2", "joint3", "joint4", "joint5", "joint6"};
+  // for (const auto& joint_name : arm_joint_names)
+  //   arm_joint_handles_.push_back(hybrid_joint_interface->getHandle(joint_name));
 
   ContactSensorInterface* contact_interface = robot_hw->get<ContactSensorInterface>();
   std::vector<ContactSensorHandle> contact_handles;
@@ -89,6 +94,12 @@ void LeggedController::starting(const ros::Time& time)
 {
   // Initial state
   current_observation_.mode = ModeNumber::STANCE;
+  std::cerr<<"state estimate:"<<std::endl;
+  std::cerr<<state_estimate_->update(time, ros::Duration(0.005)).transpose()<<std::endl;
+  //print state estimate size
+  std::cerr<<"state estimate size:"<<std::endl;
+  std::cerr<<state_estimate_->update(time, ros::Duration(0.005)).size()<<std::endl;
+  
   current_observation_.state =
       rbd_conversions_->computeCentroidalStateFromRbdModel(state_estimate_->update(time, ros::Duration(0.005)));
   current_observation_.input.setZero(legged_interface_->getCentroidalModelInfo().inputDim);
@@ -125,6 +136,10 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
   current_observation_.state(9) = yaw_last + angles::shortest_angular_distance(yaw_last, current_observation_.state(9));
   current_observation_.mode = state_estimate_->getMode();
 
+  //print observation state size
+  // std::cerr<<"observation state size:"<<std::endl;
+  // std::cerr<<current_observation_.state.size()<<std::endl; // 30
+
   // Update the current state of the system
   mpc_mrt_interface_->setCurrentObservation(current_observation_);
 
@@ -137,16 +152,23 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
   mpc_mrt_interface_->evaluatePolicy(current_observation_.time, current_observation_.state, optimized_state,
                                      optimized_input, planned_mode);
 
+  // Print optimized_state and optimized_input
+  // std::cerr<<"optimized_state:"<<std::endl;
+  // std::cerr<<optimized_state.transpose()<<std::endl;
+  // std::cerr<<"optimized_input:"<<std::endl;
+  // std::cerr<<optimized_input.transpose()<<std::endl;
+  // std::cerr<<"measered_rbd_state:"<<std::endl;
+  // std::cerr<<measured_rbd_state.transpose()<<std::endl;
   // Whole body control
   current_observation_.input = optimized_input;
-
+  
   // auto t1 = std::chrono::steady_clock::now();
   vector_t x = wbc_->update(optimized_state, optimized_input, measured_rbd_state, planned_mode);
   // auto t2 = std::chrono::steady_clock::now();
   // auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2-t1);
   // std::cout<<duration.count()<<"us \n";
   
-  vector_t torque = x.tail(12);
+  vector_t torque = x.tail(18);
   vector_t pos_des = centroidal_model::getJointAngles(optimized_state, legged_interface_->getCentroidalModelInfo());
   vector_t vel_des = centroidal_model::getJointVelocities(optimized_input, legged_interface_->getCentroidalModelInfo());
 
@@ -158,16 +180,27 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
   }
 
   //PID controller
-  for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j){
-    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 4, 2.5, torque(j));
-
+  for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum-6; ++j){
+    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 4, 0, torque(j));
+  }
+  for (size_t j = legged_interface_->getCentroidalModelInfo().actuatedDofNum-6; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j){
+    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 200, 0., 0);
   }
 
   // Visualization
   visualizer_->update(current_observation_, mpc_mrt_interface_->getPolicy(), mpc_mrt_interface_->getCommand());
 
+  // //print observation state size
+  // std::cerr<<"observation state size:"<<std::endl;
+  // std::cerr<<current_observation_.state.size()<<std::endl; // 30
+  // //print observation input size
+  // std::cerr<<"observation input size:"<<std::endl;
+  // std::cerr<<current_observation_.input.size()<<std::endl; // 36
+
   // Publish the observation. Only needed for the command interface
+  wbc_resault_.input = x;
   observation_publisher_.publish(ros_msg_conversions::createObservationMsg(current_observation_));
+  wbc_publisher_.publish(ros_msg_conversions::createObservationMsg(wbc_resault_));
 
 }
 
@@ -209,6 +242,7 @@ void LeggedController::setupMpc()
   mpc_->getSolverPtr()->addSynchronizedModule(gait_receiver_ptr);
   mpc_->getSolverPtr()->setReferenceManager(ros_reference_manager_ptr);
   observation_publisher_ = nh.advertise<ocs2_msgs::mpc_observation>(robot_name + "_mpc_observation", 1);
+  wbc_publisher_ = nh.advertise<ocs2_msgs::mpc_observation>(robot_name + "_wbc_resault", 1);
 
   // auto arm_ref_ptr = std::make_shared<ArmReference>(robot_name);
   // arm_ref_ptr->subscribe(nh);
