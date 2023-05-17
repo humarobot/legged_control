@@ -71,6 +71,25 @@ TargetTrajectories goalToTargetTrajectories(const vector_t& goal, const SystemOb
   return targetPoseToTargetTrajectories(target_pose, observation, target_reaching_time);
 }
 
+TargetTrajectories eePoseToTargetTrajectories(const vector_t& ee_pose, const SystemObservation& observation)
+{
+  const vector_t current_base_pose = observation.state.segment<6>(6);
+  vector_t target_base_pose(6);
+  target_base_pose<<0.,0.,0.5,0.,0.,0.;
+  const scalar_t target_reaching_time = observation.time + 0.1;
+  // desired time trajectory
+  const scalar_array_t time_trajectory{ observation.time, target_reaching_time };
+  // desired state trajectory
+  vector_array_t state_trajectory(2, vector_t::Zero(observation.state.size()));
+  vector_t target_joint_pos = DEFAULT_JOINT_STATE;
+  target_joint_pos.tail(6) = ee_pose;
+  state_trajectory[0] << vector_t::Zero(6), current_base_pose, target_joint_pos;
+  state_trajectory[1] << vector_t::Zero(6), target_base_pose, target_joint_pos;
+  // desired input trajectory (just right dimensions, they are not used)
+  const vector_array_t input_trajectory(2, vector_t::Zero(observation.input.size()));
+  return { time_trajectory, state_trajectory, input_trajectory };
+}
+
 TargetTrajectories cmdVelToTargetTrajectories(const vector_t& cmd_vel, const SystemObservation& observation)
 {
   // if cmd_vel(0),cmd_vel(1),cmd_vel(3) is not near zero, update current_pose_
@@ -117,7 +136,7 @@ int main(int argc, char* argv[])
   loadData::loadCppDataType(task_file, "mpc.timeHorizon", TIME_TO_TARGET);
 
   TargetTrajectoriesPublisher target_pose_command(node_handle, robot_name, &goalToTargetTrajectories,
-                                                  &cmdVelToTargetTrajectories);
+                                                  &cmdVelToTargetTrajectories,&eePoseToTargetTrajectories);
 
   ros::spin();
   // Successful exit

@@ -108,6 +108,7 @@ protected:
   std::unique_ptr<StateInputConstraint> getZeroForceConstraint(size_t contactPointIndex);
   std::unique_ptr<StateInputConstraint> getZeroWrenchConstraint(size_t contactPointIndex);
   std::unique_ptr<StateCost> getFixPositionConstraint();
+  std::unique_ptr<StateCost> getBaseConstraint();
   std::unique_ptr<StateCost> getArmEndEffectorConstraint(const EndEffectorKinematics<scalar_t>& eeKinematics);
   std::unique_ptr<StateInputCost> getArmZeroVelocityConstraint();
   ModelSettings modelSettings_;

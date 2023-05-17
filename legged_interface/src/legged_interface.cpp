@@ -28,6 +28,7 @@
 #include <ocs2_legged_robot/constraint/FixPositionConstraint.h>
 #include <ocs2_legged_robot/constraint/ZeroVelocityConstraintCppAd.h>
 #include <ocs2_legged_robot/constraint/ArmEndEffectorConstraint.h>
+#include <ocs2_legged_robot/constraint/BaseConstraint.h>
 // #include "ocs2_legged_robot/constraint/FootsTrackConstraint.h"
 #include <ocs2_legged_robot/cost/LeggedRobotQuadraticTrackingCost.h>
 #include <ocs2_legged_robot/dynamics/LeggedRobotDynamicsAD.h>
@@ -155,8 +156,9 @@ void LeggedInterface::setupOptimalControlProblem(const std::string& taskFile, co
     // problemPtr_->stateSoftConstraintPtr->add(hand_name + "_armEndEffector", getArmEndEffectorConstraint(*ee_kinematics_ptr));
     // problemPtr_->softConstraintPtr->add(hand_name + "_zeroVelocity", getArmZeroVelocityConstraint());
     problemPtr_->equalityConstraintPtr->add(hand_name + "_zeroWrench", getZeroWrenchConstraint(i));
-
   }
+  // Base constraint term
+  problemPtr_->stateSoftConstraintPtr->add("baseConstraint", getBaseConstraint());
 
   // Pre-computation
   problemPtr_->preComputationPtr.reset(new LeggedRobotPreComputation(*pinocchioInterfacePtr_, centroidalModelInfo_,
@@ -380,9 +382,20 @@ std::unique_ptr<StateCost>
 LeggedInterface::getFixPositionConstraint()
 {
   std::unique_ptr<StateConstraint> constraint;
-  constraint.reset(new FixPositionConstraint());
+  constraint.reset(new FixPositionConstraint(*referenceManagerPtr_));
   std::vector<std::unique_ptr<PenaltyBase>> penaltyArray(6);
-  std::generate_n(penaltyArray.begin(), 6, [&] { return std::unique_ptr<PenaltyBase>(new QuadraticPenalty(500)); });
+  std::generate_n(penaltyArray.begin(), 6, [&] { return std::unique_ptr<PenaltyBase>(new QuadraticPenalty(1000)); });
+
+  return std::unique_ptr<StateCost>(new StateSoftConstraint(std::move(constraint), std::move(penaltyArray)));
+}
+
+std::unique_ptr<StateCost>
+LeggedInterface::getBaseConstraint()
+{
+  std::unique_ptr<StateConstraint> constraint;
+  constraint.reset(new BaseConstraint(*referenceManagerPtr_));
+  std::vector<std::unique_ptr<PenaltyBase>> penaltyArray(6);
+  std::generate_n(penaltyArray.begin(), 6, [&] { return std::unique_ptr<PenaltyBase>(new QuadraticPenalty(1000)); });
 
   return std::unique_ptr<StateCost>(new StateSoftConstraint(std::move(constraint), std::move(penaltyArray)));
 }

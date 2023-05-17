@@ -53,8 +53,13 @@ bool LeggedController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHand
   // Visualization
   ros::NodeHandle nh;
   CentroidalModelPinocchioMapping pinocchio_mapping(legged_interface_->getCentroidalModelInfo());
+  std::vector<std::string> ee_names;
+  for (const auto& ee : legged_interface_->modelSettings().contactNames3DoF)
+    ee_names.push_back(ee);
+  for (const auto& ee : legged_interface_->modelSettings().contactNames6DoF)
+    ee_names.push_back(ee);
   PinocchioEndEffectorKinematics ee_kinematics(legged_interface_->getPinocchioInterface(), pinocchio_mapping,
-                                               legged_interface_->modelSettings().contactNames3DoF);
+                                               ee_names);
   visualizer_ = std::make_shared<LeggedRobotVisualizer>(legged_interface_->getPinocchioInterface(),
                                                         legged_interface_->getCentroidalModelInfo(), ee_kinematics, nh);
 
@@ -94,11 +99,11 @@ void LeggedController::starting(const ros::Time& time)
 {
   // Initial state
   current_observation_.mode = ModeNumber::STANCE;
-  std::cerr<<"state estimate:"<<std::endl;
-  std::cerr<<state_estimate_->update(time, ros::Duration(0.005)).transpose()<<std::endl;
-  //print state estimate size
-  std::cerr<<"state estimate size:"<<std::endl;
-  std::cerr<<state_estimate_->update(time, ros::Duration(0.005)).size()<<std::endl;
+  // std::cerr<<"state estimate:"<<std::endl;
+  // std::cerr<<state_estimate_->update(time, ros::Duration(0.005)).transpose()<<std::endl;
+  // //print state estimate size
+  // std::cerr<<"state estimate size:"<<std::endl;
+  // std::cerr<<state_estimate_->update(time, ros::Duration(0.005)).size()<<std::endl;
   
   current_observation_.state =
       rbd_conversions_->computeCentroidalStateFromRbdModel(state_estimate_->update(time, ros::Duration(0.005)));
@@ -122,7 +127,6 @@ void LeggedController::starting(const ros::Time& time)
 
   mpc_running_ = true;
   
- 
 }
 
 void LeggedController::update(const ros::Time& time, const ros::Duration& period)
@@ -181,21 +185,15 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
 
   //PID controller
   for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum-6; ++j){
-    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 4, 0, torque(j));
+    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 30, 5, torque(j));
   }
+
   for (size_t j = legged_interface_->getCentroidalModelInfo().actuatedDofNum-6; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j){
-    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 200, 0., 0);
+    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 5, 0.02, torque(j));
   }
 
   // Visualization
   visualizer_->update(current_observation_, mpc_mrt_interface_->getPolicy(), mpc_mrt_interface_->getCommand());
-
-  // //print observation state size
-  // std::cerr<<"observation state size:"<<std::endl;
-  // std::cerr<<current_observation_.state.size()<<std::endl; // 30
-  // //print observation input size
-  // std::cerr<<"observation input size:"<<std::endl;
-  // std::cerr<<current_observation_.input.size()<<std::endl; // 36
 
   // Publish the observation. Only needed for the command interface
   wbc_resault_.input = x;

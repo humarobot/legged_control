@@ -26,83 +26,117 @@ public:
 
   TargetTrajectoriesPublisher(::ros::NodeHandle& nh, const std::string& topic_prefix,
                               CmdToTargetTrajectories goal_to_target_trajectories,
-                              CmdToTargetTrajectories cmd_vel_to_target_trajectories)
+                              CmdToTargetTrajectories cmd_vel_to_target_trajectories,
+                              CmdToTargetTrajectories eePoseToTargetTrajectories)
     : goal_to_target_trajectories_(std::move(goal_to_target_trajectories))
     , cmd_vel_to_target_trajectories_(std::move(cmd_vel_to_target_trajectories))
+    , ee_pose_to_target_trajectories_(std::move(eePoseToTargetTrajectories))
     , tf2_(buffer_)
-  {
-    // Trajectories publisher
-    target_trajectories_publisher_.reset(new TargetTrajectoriesRosPublisher(nh, topic_prefix));
+    {
+      // Trajectories publisher
+      target_trajectories_publisher_.reset(new TargetTrajectoriesRosPublisher(nh, topic_prefix));
 
-    // observation subscriber
-    auto observation_callback = [this](const ocs2_msgs::mpc_observation::ConstPtr& msg) {
-      std::lock_guard<std::mutex> lock(latest_observation_mutex_);
-      latest_observation_ = ros_msg_conversions::readObservationMsg(*msg);
-    };
-    observation_sub_ =
-        nh.subscribe<ocs2_msgs::mpc_observation>(topic_prefix + "_mpc_observation", 1, observation_callback);
+      // observation subscriber
+      auto observation_callback = [this](const ocs2_msgs::mpc_observation::ConstPtr& msg) {
+        std::lock_guard<std::mutex> lock(latest_observation_mutex_);
+        latest_observation_ = ros_msg_conversions::readObservationMsg(*msg);
+      };
+      observation_sub_ =
+          nh.subscribe<ocs2_msgs::mpc_observation>(topic_prefix + "_mpc_observation", 1, observation_callback);
 
-    // goal subscriber
-    auto goal_callback = [this](const geometry_msgs::PoseStamped::ConstPtr& msg) {
-      if (latest_observation_.time == 0.0)
-        return;
-      geometry_msgs::PoseStamped pose = *msg;
-      try
-      {
-        buffer_.transform(pose, pose, "odom", ros::Duration(0.2));
-      }
-      catch (tf2::TransformException& ex)
-      {
-        ROS_WARN("Failure %s\n", ex.what());
-        return;
-      }
+      // base goal subscriber
+      auto goal_callback = [this](const geometry_msgs::PoseStamped::ConstPtr& msg) {
+        if (latest_observation_.time == 0.0)
+          return;
+        geometry_msgs::PoseStamped pose = *msg;
+        try
+        {
+          buffer_.transform(pose, pose, "odom", ros::Duration(0.2));
+        }
+        catch (tf2::TransformException& ex)
+        {
+          ROS_WARN("Failure %s\n", ex.what());
+          return;
+        }
 
-      vector_t cmd_goal = vector_t::Zero(6);
-      cmd_goal[0] = pose.pose.position.x;
-      cmd_goal[1] = pose.pose.position.y;
-      cmd_goal[2] = pose.pose.position.z;
-      Eigen::Quaternion<scalar_t> q(pose.pose.orientation.w, pose.pose.orientation.x, pose.pose.orientation.y,
-                                    pose.pose.orientation.z);
-      //quaternion to rqy euler angle
-      cmd_goal[3] = std::atan2(2 * (q.w() * q.x() + q.y() * q.z()), 1 - 2 * (q.x() * q.x() + q.y() * q.y()));
-      cmd_goal[4] = std::asin(2 * (q.w() * q.y() - q.z() * q.x()));
-      cmd_goal[5] = std::atan2(2 * (q.w() * q.z() + q.x() * q.y()), 1 - 2 * (q.y() * q.y() + q.z() * q.z()));
-      
+        vector_t cmd_goal = vector_t::Zero(6);
+        cmd_goal[0] = pose.pose.position.x;
+        cmd_goal[1] = pose.pose.position.y;
+        cmd_goal[2] = pose.pose.position.z;
+        Eigen::Quaternion<scalar_t> q(pose.pose.orientation.w, pose.pose.orientation.x, pose.pose.orientation.y,
+                                      pose.pose.orientation.z);
+        // quaternion to rqy euler angle
+        cmd_goal[3] = std::atan2(2 * (q.w() * q.x() + q.y() * q.z()), 1 - 2 * (q.x() * q.x() + q.y() * q.y()));
+        cmd_goal[4] = std::asin(2 * (q.w() * q.y() - q.z() * q.x()));
+        cmd_goal[5] = std::atan2(2 * (q.w() * q.z() + q.x() * q.y()), 1 - 2 * (q.y() * q.y() + q.z() * q.z()));
 
-      const auto trajectories = goal_to_target_trajectories_(cmd_goal, latest_observation_);
-      target_trajectories_publisher_->publishTargetTrajectories(trajectories);
-    };
+        const auto trajectories = goal_to_target_trajectories_(cmd_goal, latest_observation_);
+        target_trajectories_publisher_->publishTargetTrajectories(trajectories);
+      };
 
-    // cmd_vel subscriber
-    auto cmd_vel_callback = [this](const geometry_msgs::Twist::ConstPtr& msg) {
-      if (latest_observation_.time == 0.0)
-        return;
+      // cmd_vel subscriber
+      auto cmd_vel_callback = [this](const geometry_msgs::Twist::ConstPtr& msg) {
+        if (latest_observation_.time == 0.0)
+          return;
 
-      vector_t cmd_vel = vector_t::Zero(4);
-      cmd_vel[0] = msg->linear.x;
-      cmd_vel[1] = msg->linear.y;
-      cmd_vel[2] = msg->linear.z;
-      cmd_vel[3] = msg->angular.z;
+        vector_t cmd_vel = vector_t::Zero(4);
+        cmd_vel[0] = msg->linear.x;
+        cmd_vel[1] = msg->linear.y;
+        cmd_vel[2] = msg->linear.z;
+        cmd_vel[3] = msg->angular.z;
 
-      const auto trajectories = cmd_vel_to_target_trajectories_(cmd_vel, latest_observation_);
-      target_trajectories_publisher_->publishTargetTrajectories(trajectories);
-    };
+        const auto trajectories = cmd_vel_to_target_trajectories_(cmd_vel, latest_observation_);
+        target_trajectories_publisher_->publishTargetTrajectories(trajectories);
+      };
 
-    goal_sub_ = nh.subscribe<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1, goal_callback);
-    cmd_vel_sub_ = nh.subscribe<geometry_msgs::Twist>("/cmd_vel", 1, cmd_vel_callback);
-  }
+      // end effector pose subscriber
+      auto ee_pose_callback = [this](const geometry_msgs::PoseStamped::ConstPtr& msg) {
+        if (latest_observation_.time == 0.0)
+          return;
+        geometry_msgs::PoseStamped pose = *msg;
+        try
+        {
+          buffer_.transform(pose, pose, "odom", ros::Duration(0.2));
+        }
+        catch (tf2::TransformException& ex)
+        {
+          ROS_WARN("Failure %s\n", ex.what());
+          return;
+        }
 
-private:
-  CmdToTargetTrajectories goal_to_target_trajectories_, cmd_vel_to_target_trajectories_;
+        vector_t cmd_goal = vector_t::Zero(6);
+        cmd_goal[0] = pose.pose.position.x;
+        cmd_goal[1] = pose.pose.position.y;
+        cmd_goal[2] = pose.pose.position.z;
+        Eigen::Quaternion<scalar_t> q(pose.pose.orientation.w, pose.pose.orientation.x, pose.pose.orientation.y,
+                                      pose.pose.orientation.z);
+        // quaternion to rqy euler angle
+        cmd_goal[3] = std::atan2(2 * (q.w() * q.x() + q.y() * q.z()), 1 - 2 * (q.x() * q.x() + q.y() * q.y()));
+        cmd_goal[4] = std::asin(2 * (q.w() * q.y() - q.z() * q.x()));
+        cmd_goal[5] = std::atan2(2 * (q.w() * q.z() + q.x() * q.y()), 1 - 2 * (q.y() * q.y() + q.z() * q.z()));
+        // TODO inverse kinematics
+        // std::cerr<<"TODO inverse kinematics\n"<<std::endl;
+        const auto trajectories = ee_pose_to_target_trajectories_(cmd_goal, latest_observation_);
+        target_trajectories_publisher_->publishTargetTrajectories(trajectories);
+      };
 
-  std::unique_ptr<TargetTrajectoriesRosPublisher> target_trajectories_publisher_;
+      goal_sub_ = nh.subscribe<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1, goal_callback);
+      cmd_vel_sub_ = nh.subscribe<geometry_msgs::Twist>("/cmd_vel", 1, cmd_vel_callback);
+      ee_sub_ = nh.subscribe<geometry_msgs::PoseStamped>("/end_effector_pose", 1, ee_pose_callback);
+    }
 
-  ::ros::Subscriber observation_sub_, goal_sub_, cmd_vel_sub_;
-  tf2_ros::Buffer buffer_;
-  tf2_ros::TransformListener tf2_;
+  private:
+    CmdToTargetTrajectories goal_to_target_trajectories_, cmd_vel_to_target_trajectories_,
+        ee_pose_to_target_trajectories_;
 
-  mutable std::mutex latest_observation_mutex_;
-  SystemObservation latest_observation_;
+    std::unique_ptr<TargetTrajectoriesRosPublisher> target_trajectories_publisher_;
+
+    ::ros::Subscriber observation_sub_, goal_sub_, cmd_vel_sub_, ee_sub_;
+    tf2_ros::Buffer buffer_;
+    tf2_ros::TransformListener tf2_;
+
+    mutable std::mutex latest_observation_mutex_;
+    SystemObservation latest_observation_;
 };
 
 }  // namespace legged
