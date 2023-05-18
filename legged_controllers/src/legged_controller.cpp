@@ -18,6 +18,7 @@
 #include <ocs2_msgs/mpc_observation.h>
 #include <ocs2_ddp/GaussNewtonDDP_MPC.h>
 #include <ocs2_sqp/MultipleShootingMpc.h>
+#include <qm_wbc/HierarchicalWbc.h>
 
 #include <legged_estimation/from_topice_estimate.h>
 #include <legged_estimation/linear_kalman_filter.h>
@@ -86,8 +87,17 @@ bool LeggedController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHand
   setupStateEstimate(*legged_interface_, hybrid_joint_handles_, contact_handles,
                      robot_hw->get<hardware_interface::ImuSensorInterface>()->getHandle("unitree_imu"),&current_observation_);
 
+  // // Whole body control
+  // wbc_ = std::make_shared<Wbc>(task_file, *legged_interface_, ee_kinematics, verbose);
   // Whole body control
-  wbc_ = std::make_shared<Wbc>(task_file, *legged_interface_, ee_kinematics, verbose);
+  eeKinematicsPtr_ = std::make_shared<PinocchioEndEffectorKinematics>(legged_interface_->getPinocchioInterface(), pinocchio_mapping,
+                                                                        legged_interface_->modelSettings().contactNames3DoF);
+  std::vector<std::string> eeName{"hand_link"};
+  armEeKinematicsPtr_ = std::make_shared<PinocchioEndEffectorKinematics>(legged_interface_->getPinocchioInterface(), pinocchio_mapping,
+                                                                           eeName);
+  wbc_ = std::make_shared<qm::HierarchicalWbc>(legged_interface_->getPinocchioInterface(), legged_interface_->getCentroidalModelInfo(),
+                                            *eeKinematicsPtr_, *armEeKinematicsPtr_, controller_nh);
+  wbc_->loadTasksSetting(task_file, true);
 
   // Safety Checker
   safety_checker_ = std::make_shared<SafetyChecker>(legged_interface_->getCentroidalModelInfo());
@@ -167,12 +177,15 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
   current_observation_.input = optimized_input;
   
   // auto t1 = std::chrono::steady_clock::now();
-  vector_t x = wbc_->update(optimized_state, optimized_input, measured_rbd_state, planned_mode);
-  // auto t2 = std::chrono::steady_clock::now();
+  // vector_t x = wbc_->update(optimized_state, optimized_input, measured_rbd_state, planned_mode);
+  // auto t2 = std::chrono::stead=y_clock::now();
   // auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2-t1);
   // std::cout<<duration.count()<<"us \n";
-  
+  vector_t x = wbc_->update(optimized_state, optimized_input, measured_rbd_state, planned_mode, period.toSec(), current_observation_.time);
   vector_t torque = x.tail(18);
+  // vector_t joint_acc = vector_t::Zero(legged_interface_->getCentroidalModelInfo().actuatedDofNum);
+  // vector_t z = rbd_conversions_->computeRbdTorqueFromCentroidalModel(optimized_state, optimized_input, joint_acc);
+  // vector_t torque = z.segment<18>(6);
   vector_t pos_des = centroidal_model::getJointAngles(optimized_state, legged_interface_->getCentroidalModelInfo());
   vector_t vel_des = centroidal_model::getJointVelocities(optimized_input, legged_interface_->getCentroidalModelInfo());
 
@@ -185,20 +198,20 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
 
   //PID controller
   for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum-6; ++j){
-    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 30, 5, torque(j));
+    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 20, 5, torque(j));
   }
 
   for (size_t j = legged_interface_->getCentroidalModelInfo().actuatedDofNum-6; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j){
-    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 5, 0.02, torque(j));
+    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 3, 0.01,torque(j));
   }
 
   // Visualization
   visualizer_->update(current_observation_, mpc_mrt_interface_->getPolicy(), mpc_mrt_interface_->getCommand());
 
   // Publish the observation. Only needed for the command interface
-  wbc_resault_.input = x;
+  // wbc_resault_.input = x;
   observation_publisher_.publish(ros_msg_conversions::createObservationMsg(current_observation_));
-  wbc_publisher_.publish(ros_msg_conversions::createObservationMsg(wbc_resault_));
+  // wbc_publisher_.publish(ros_msg_conversions::createObservationMsg(wbc_resault_));
 
 }
 

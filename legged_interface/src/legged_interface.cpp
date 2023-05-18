@@ -13,6 +13,7 @@
 #include <ocs2_centroidal_model/CentroidalModelPinocchioMapping.h>
 #include <ocs2_centroidal_model/ModelHelperFunctions.h>
 #include <ocs2_core/soft_constraint/StateInputSoftConstraint.h>
+#include <ocs2_core/soft_constraint/StateInputSoftBoxConstraint.h>
 #include <ocs2_oc/synchronized_module/SolverSynchronizedModule.h>
 #include <ocs2_pinocchio_interface/PinocchioEndEffectorKinematicsCppAd.h>
 
@@ -137,8 +138,8 @@ void LeggedInterface::setupOptimalControlProblem(const std::string& taskFile, co
   }
   // Arm constraint term
   {
-    int i=4;
-    const std::string& hand_name = modelSettings_.contactNames6DoF[0];
+    int i = 4;
+    const std::string& hand_name = "hand_link";
     std::unique_ptr<EndEffectorKinematics<scalar_t>> ee_kinematics_ptr;
     const auto info_cpp_ad = centroidalModelInfo_.toCppAd();
     const CentroidalModelPinocchioMappingCppAd pinocchio_mapping_cpp_ad(info_cpp_ad);
@@ -152,13 +153,18 @@ void LeggedInterface::setupOptimalControlProblem(const std::string& taskFile, co
         *pinocchioInterfacePtr_, pinocchio_mapping_cpp_ad, { hand_name }, centroidalModelInfo_.stateDim,
         centroidalModelInfo_.inputDim, velocity_update_callback, hand_name, modelSettings_.modelFolderCppAd,
         modelSettings_.recompileLibrariesCppAd, modelSettings_.verboseCppAd));
-    problemPtr_->stateSoftConstraintPtr->add(hand_name + "_fixPosition", getFixPositionConstraint());
-    // problemPtr_->stateSoftConstraintPtr->add(hand_name + "_armEndEffector", getArmEndEffectorConstraint(*ee_kinematics_ptr));
+    // problemPtr_->stateSoftConstraintPtr->add(hand_name + "_fixPosition", getFixPositionConstraint());
+    problemPtr_->stateSoftConstraintPtr->add(hand_name + "_armEndEffector",
+                                             getArmEndEffectorConstraint(*ee_kinematics_ptr, taskFile, "endEffector", verbose));
+    problemPtr_->softConstraintPtr->add("armJointLimits",
+                                        getJointLimitSoftConstraint(*pinocchioInterfacePtr_, taskFile, verbose));
+    problemPtr_->finalSoftConstraintPtr->add("finalEndEffector",
+                                             getArmEndEffectorConstraint(*ee_kinematics_ptr, taskFile,"finalEndEffector", verbose));
     // problemPtr_->softConstraintPtr->add(hand_name + "_zeroVelocity", getArmZeroVelocityConstraint());
-    problemPtr_->equalityConstraintPtr->add(hand_name + "_zeroWrench", getZeroWrenchConstraint(i));
+    // problemPtr_->equalityConstraintPtr->add(hand_name + "_zeroWrench", getZeroWrenchConstraint(i));
   }
-  // Base constraint term
-  problemPtr_->stateSoftConstraintPtr->add("baseConstraint", getBaseConstraint());
+  // // Base constraint term
+  // problemPtr_->stateSoftConstraintPtr->add("baseConstraint", getBaseConstraint());
 
   // Pre-computation
   problemPtr_->preComputationPtr.reset(new LeggedRobotPreComputation(*pinocchioInterfacePtr_, centroidalModelInfo_,
@@ -371,15 +377,12 @@ std::unique_ptr<StateInputConstraint> LeggedInterface::getZeroForceConstraint(si
       new ZeroForceConstraint(*referenceManagerPtr_, contactPointIndex, centroidalModelInfo_));
 }
 
-std::unique_ptr<StateInputConstraint>
-LeggedInterface::getZeroWrenchConstraint(size_t contactPointIndex)
+std::unique_ptr<StateInputConstraint> LeggedInterface::getZeroWrenchConstraint(size_t contactPointIndex)
 {
-  return std::unique_ptr<StateInputConstraint>(
-      new ZeroWrenchConstraint(contactPointIndex,centroidalModelInfo_));
+  return std::unique_ptr<StateInputConstraint>(new ZeroWrenchConstraint(contactPointIndex, centroidalModelInfo_));
 }
 
-std::unique_ptr<StateCost>
-LeggedInterface::getFixPositionConstraint()
+std::unique_ptr<StateCost> LeggedInterface::getFixPositionConstraint()
 {
   std::unique_ptr<StateConstraint> constraint;
   constraint.reset(new FixPositionConstraint(*referenceManagerPtr_));
@@ -389,8 +392,7 @@ LeggedInterface::getFixPositionConstraint()
   return std::unique_ptr<StateCost>(new StateSoftConstraint(std::move(constraint), std::move(penaltyArray)));
 }
 
-std::unique_ptr<StateCost>
-LeggedInterface::getBaseConstraint()
+std::unique_ptr<StateCost> LeggedInterface::getBaseConstraint()
 {
   std::unique_ptr<StateConstraint> constraint;
   constraint.reset(new BaseConstraint(*referenceManagerPtr_));
@@ -401,14 +403,122 @@ LeggedInterface::getBaseConstraint()
 }
 
 std::unique_ptr<StateCost>
-LeggedInterface::getArmEndEffectorConstraint(const EndEffectorKinematics<scalar_t>& eeKinematics)
+LeggedInterface::getArmEndEffectorConstraint(const EndEffectorKinematics<scalar_t>& eeKinematics,
+                                             const std::string& taskFile, const std::string& prefix, bool verbose)
 {
+  scalar_t muPosition = 1.0;
+  scalar_t muOrientation = 1.0;
+
+  boost::property_tree::ptree pt;
+  boost::property_tree::read_info(taskFile, pt);
+
+  loadData::loadPtreeValue(pt, muPosition, prefix + ".muPosition", verbose);
+  loadData::loadPtreeValue(pt, muOrientation, prefix + ".muOrientation", verbose);
+
+  if (referenceManagerPtr_ == nullptr)
+  {
+    throw std::runtime_error("[getEndEffectorConstraint] referenceManagerPtr should be set first!");
+  }
+
   std::unique_ptr<StateConstraint> constraint;
   constraint.reset(new ArmEndEffectorConstraint(eeKinematics, *referenceManagerPtr_));
   std::vector<std::unique_ptr<PenaltyBase>> penaltyArray(6);
-  std::generate_n(penaltyArray.begin(), 6, [&] { return std::unique_ptr<PenaltyBase>(new QuadraticPenalty(10000)); });
+  std::generate_n(penaltyArray.begin(), 3,
+                  [&] { return std::unique_ptr<PenaltyBase>(new QuadraticPenalty(muPosition)); });
+  std::generate_n(penaltyArray.begin() + 3, 3,
+                  [&] { return std::unique_ptr<PenaltyBase>(new QuadraticPenalty(muOrientation)); });
 
   return std::unique_ptr<StateCost>(new StateSoftConstraint(std::move(constraint), std::move(penaltyArray)));
+}
+
+std::unique_ptr<StateInputCost>
+LeggedInterface::getJointLimitSoftConstraint(const ocs2::PinocchioInterface& pinocchioInterface,
+                                             const std::string& taskFile, bool verbose)
+{
+  boost::property_tree::ptree pt;
+  boost::property_tree::read_info(taskFile, pt);
+
+  const auto& model = pinocchioInterface.getModel();
+
+  const int armStateDim = 6;
+  const int armInputDim = 6;
+  const int armStateIdx = centroidalModelInfo_.stateDim - 6;
+  const int armInputIdx = centroidalModelInfo_.inputDim - 6;
+
+  // Load arm position limits
+  std::vector<StateInputSoftBoxConstraint::BoxConstraint> stateLimits;
+  {
+    scalar_t muPositionLimits = 1e-2;
+    scalar_t deltaPositionLimits = 1e-3;
+
+    // arm joint DOF limits from the parsed URDF
+    const vector_t lowerBoundArm = model.lowerPositionLimit.tail(armStateDim);
+    const vector_t upperBoundArm = model.upperPositionLimit.tail(armStateDim);
+
+    loadData::loadPtreeValue(pt, muPositionLimits, "jointPositionLimits.mu", verbose);
+    loadData::loadPtreeValue(pt, deltaPositionLimits, "jointPositionLimits.delta", verbose);
+    if (verbose)
+    {
+      std::cerr << "\n #### JointPositionLimits Settings: ";
+      std::cerr << "\n #### =============================================================================\n";
+      std::cerr << " #### lowerBound: " << lowerBoundArm.transpose() << '\n';
+      std::cerr << " #### upperBound: " << upperBoundArm.transpose() << '\n';
+      std::cerr << " #### =============================================================================\n";
+    }
+
+    stateLimits.reserve(armStateDim);
+    for (int i = 0; i < armStateDim; ++i)
+    {
+      StateInputSoftBoxConstraint::BoxConstraint boxConstraint;
+      boxConstraint.index = armStateIdx + i;
+      boxConstraint.lowerBound = lowerBoundArm(i);
+      boxConstraint.upperBound = upperBoundArm(i);
+      boxConstraint.penaltyPtr.reset(new RelaxedBarrierPenalty({ muPositionLimits, deltaPositionLimits }));
+      stateLimits.push_back(std::move(boxConstraint));
+    }
+  }
+
+  // load arm velocity limits
+  std::vector<StateInputSoftBoxConstraint::BoxConstraint> inputLimits;
+  {
+    scalar_t muVelocityLimits = 1e-2;
+    scalar_t deltaVelocityLimits = 1e-3;
+
+    loadData::loadPtreeValue(pt, muVelocityLimits, "jointVelocityLimits.mu", verbose);
+    loadData::loadPtreeValue(pt, deltaVelocityLimits, "jointVelocityLimits.delta", verbose);
+
+    // arm joint DOFs velocity limits
+    vector_t lowerBoundArm = vector_t::Zero(armInputDim);
+    vector_t upperBoundArm = vector_t::Zero(armInputDim);
+    loadData::loadEigenMatrix(taskFile, "jointVelocityLimits.lowerBound.arm", lowerBoundArm);
+    loadData::loadEigenMatrix(taskFile, "jointVelocityLimits.upperBound.arm", upperBoundArm);
+
+    inputLimits.reserve(armInputDim);
+    for (int i = 0; i < armInputDim; ++i)
+    {
+      StateInputSoftBoxConstraint::BoxConstraint boxConstraint;
+      boxConstraint.index = armInputIdx + i;
+      boxConstraint.lowerBound = lowerBoundArm(i);
+      boxConstraint.upperBound = upperBoundArm(i);
+      boxConstraint.penaltyPtr.reset(new RelaxedBarrierPenalty({ muVelocityLimits, deltaVelocityLimits }));
+      inputLimits.push_back(std::move(boxConstraint));
+    }
+
+    if (verbose)
+    {
+      std::cerr << "\n #### JointVelocityLimits Settings: ";
+      std::cerr << "\n #### =============================================================================\n";
+      std::cerr << " #### 'lowerBound':  " << lowerBoundArm.transpose() << std::endl;
+      std::cerr << " #### 'upperBound':  " << upperBoundArm.transpose() << std::endl;
+      std::cerr << " #### =============================================================================\n";
+    }
+  }
+
+  auto boxConstraints =
+      std::unique_ptr<StateInputSoftBoxConstraint>(new StateInputSoftBoxConstraint(stateLimits, inputLimits));
+  boxConstraints->initializeOffset(0.0, vector_t::Zero(centroidalModelInfo_.stateDim),
+                                   vector_t::Zero(centroidalModelInfo_.inputDim));
+  return boxConstraints;
 }
 
 // std::unique_ptr<StateConstraint>
@@ -418,8 +528,7 @@ LeggedInterface::getArmEndEffectorConstraint(const EndEffectorKinematics<scalar_
 //       new ArmEndEffectorConstraint(eeKinematics, *referenceManagerPtr_));
 // }
 
-std::unique_ptr<StateInputCost>
-LeggedInterface::getArmZeroVelocityConstraint()
+std::unique_ptr<StateInputCost> LeggedInterface::getArmZeroVelocityConstraint()
 {
   std::unique_ptr<StateInputConstraint> constraint;
   constraint.reset(new ArmZeroVelocityConstraint());

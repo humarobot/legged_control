@@ -12,6 +12,7 @@ find_package(catkin REQUIRED
         legged_common
         legged_interface
         legged_wbc
+        qm_wbc
         legged_estimation
         controller_interface
         ocs2_legged_robot_ros
@@ -31,6 +32,7 @@ catkin_package(
         legged_common
         legged_interface
         legged_wbc
+        qm_wbc
         legged_estimation
         controller_interface
         ocs2_legged_robot_ros

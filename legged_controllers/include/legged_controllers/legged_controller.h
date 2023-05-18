@@ -14,6 +14,7 @@
 #include <legged_interface/legged_interface.h>
 #include <legged_estimation/state_estimate_base.h>
 #include <legged_wbc/wbc.h>
+#include <qm_wbc/WbcBase.h>
 
 #include "legged_controllers/safety_checker.h"
 
@@ -71,7 +72,7 @@ protected:
   pinocchio::Data arm_data_;
 
   std::shared_ptr<LeggedInterface> legged_interface_;
-  std::shared_ptr<Wbc> wbc_;
+  std::shared_ptr<qm::WbcBase> wbc_;
   std::shared_ptr<SafetyChecker> safety_checker_;
 
   std::shared_ptr<MPC_BASE> mpc_;
@@ -94,6 +95,8 @@ protected:
 
   Eigen::Matrix<double, 6, 1> arm_measured_q_,arm_measured_v_;
 
+  std::shared_ptr<PinocchioEndEffectorKinematics> eeKinematicsPtr_;
+  std::shared_ptr<PinocchioEndEffectorKinematics> armEeKinematicsPtr_;
   // legged_interface_->getSwitchedModelReferenceManagerPtr()->getGaitSchedule()->getModeSchedule()->eventTimes
 
 private:

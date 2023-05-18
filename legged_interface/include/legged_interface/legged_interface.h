@@ -109,8 +109,12 @@ protected:
   std::unique_ptr<StateInputConstraint> getZeroWrenchConstraint(size_t contactPointIndex);
   std::unique_ptr<StateCost> getFixPositionConstraint();
   std::unique_ptr<StateCost> getBaseConstraint();
-  std::unique_ptr<StateCost> getArmEndEffectorConstraint(const EndEffectorKinematics<scalar_t>& eeKinematics);
+  std::unique_ptr<StateCost> getArmEndEffectorConstraint(const EndEffectorKinematics<scalar_t>& eeKinematics,
+                                                         const std::string& taskFile, const std::string& prefix,
+                                                         bool verbose);
   std::unique_ptr<StateInputCost> getArmZeroVelocityConstraint();
+  std::unique_ptr<StateInputCost> getJointLimitSoftConstraint(const ocs2::PinocchioInterface& pinocchioInterface,
+                                                              const std::string& taskFile, bool verbose);
   ModelSettings modelSettings_;
   mpc::Settings mpcSettings_;
   ddp::Settings ddpSettings_;
