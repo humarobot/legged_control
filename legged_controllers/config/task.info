@@ -239,13 +239,13 @@ R
 
 endEffector
 {
-  muPosition      1500.0 ; 
+  muPosition      1000.0 ; 
   muOrientation    500.0 ; 
 }
 
 finalEndEffector
 {
-  muPosition      1500.0 ; 
+  muPosition      1000.0 ; 
   muOrientation    500.0 ; 
 }
 

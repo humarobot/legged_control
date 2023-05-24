@@ -72,6 +72,7 @@ WbcBase::WbcBase(const ocs2::PinocchioInterface &pinocchioInterface, ocs2::Centr
     ee_pub_ = nh.advertise<nav_msgs::Odometry>("qm_wbc_ee", 1);
     last_time_ = 0.;
 
+    setParam();
     // ros::NodeHandle nh_weight = ros::NodeHandle(controller_nh, "wbc");
     // dynamic_srv_ = std::make_shared<dynamic_reconfigure::Server<qm_wbc::WbcWeightConfig>>(nh_weight);
     // dynamic_reconfigure::Server<qm_wbc::WbcWeightConfig>::CallbackType cb = [this](auto&& PH1, auto&& PH2) {
@@ -378,7 +379,8 @@ Task WbcBase::formulateSwingLegTask() {
 
 // EoM
 // [Mb, -J^Tb]x = -hb
-Task WbcBase::formulateFloatingBaseEomTask() {
+Task WbcBase::
+formulateFloatingBaseEomTask() {
     matrix_t a(6, numDecisionVars_);
     vector_t b(a.rows());
     a.setZero();
@@ -506,6 +508,7 @@ Task WbcBase::formulateArmJointNomalTrackingTask()
         + jointKd * (vDesired_.segment<6>(info_.generalizedCoordinatesNum-6)
                 - vMeasured_.segment<6>(info_.generalizedCoordinatesNum-6));
 
+    // std::cerr<<b.transpose()<<std::endl;
     return {a, b, matrix_t(), vector_t()};
 }
 

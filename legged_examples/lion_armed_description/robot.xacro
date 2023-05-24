@@ -862,8 +862,8 @@
       <axis
         xyz="0 -1 0" />
       <limit
-        lower="-1."
-        upper="1."
+        lower="-1.7"
+        upper="1.7"
         effort="15.0"
         velocity="10.0" />
       <dynamics damping="0.1" friction="0.01"/>

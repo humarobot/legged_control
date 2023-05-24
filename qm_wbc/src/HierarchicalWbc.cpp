@@ -22,24 +22,24 @@ vector_t HierarchicalWbc::update(const vector_t& stateDesired, const vector_t& i
 
     Task task0 = formulateFloatingBaseEomTask() + formulateTorqueLimitsTask()
             + formulateNoContactMotionTask() + formulateFrictionConeTask();
-    Task taskInit = formulateArmJointNomalTrackingTask();
+    Task taskInit = formulateArmJointNomalTrackingTask() + formulateSwingLegTask();
 
     Task task1 = formulateBaseHeightMotionTask() + formulateBaseAngularMotionTask()
                  + formulateEeLinearMotionTrackingTask() + formulateEeAngularMotionTrackingTask()
-                 + formulateSwingLegTask() * 100;
+                 + formulateSwingLegTask();
     Task task3 = formulateContactForceTask(inputDesired) + formulateBaseXYLinearAccelTask();
 
-    if(time < 3)
-    {
+    // if(time < 3)
+    // {
         HoQp hoQp(task3, std::make_shared<HoQp>(taskInit, std::make_shared<HoQp>(task0)));
         vector_t x_optimal = hoQp.getSolutions();
         return WbcBase::updateCmd(x_optimal);
-    }
-    else
-    {
-        HoQp hoQp(task3, std::make_shared<HoQp>(task1, std::make_shared<HoQp>(task0))); //
-        vector_t x_optimal = hoQp.getSolutions();
-        return WbcBase::updateCmd(x_optimal);
-    }
+    // }
+    // else
+    // {
+        // HoQp hoQp(task3, std::make_shared<HoQp>(task1, std::make_shared<HoQp>(task0))); //
+        // vector_t x_optimal = hoQp.getSolutions();
+        // return WbcBase::updateCmd(x_optimal);
+    // }
 }
 }
