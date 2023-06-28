@@ -15,93 +15,104 @@
 
 #include <dynamic_reconfigure/server.h>
 #include "qm_wbc/WbcWeightConfig.h"
+#include "qm_wbc/HoQp.h"
 
-namespace qm{
+namespace qm
+{
 using namespace ocs2;
 using namespace legged_robot;
 
 // Decision Variables: x = [\dot v^T, F^T]^T
-class WbcBase{
-    using Vector6 = Eigen::Matrix<scalar_t, 6, 1>;
-    using Matrix6 = Eigen::Matrix<scalar_t, 6, 6>;
+class WbcBase
+{
+  using Vector6 = Eigen::Matrix<scalar_t, 6, 1>;
+  using Matrix6 = Eigen::Matrix<scalar_t, 6, 6>;
 
 public:
-    WbcBase(const PinocchioInterface& pinocchioInterface, CentroidalModelInfo info,
-            const PinocchioEndEffectorKinematics& eeKinematics, const PinocchioEndEffectorKinematics& armEeKinematics,
-            ros::NodeHandle &controller_nh);
-    virtual vector_t update(const vector_t& stateDesired, const vector_t& inputDesired,
-                            const vector_t& rbdStateMeasured, size_t mode, scalar_t period, scalar_t time);
+  WbcBase(const PinocchioInterface& pinocchioInterface, CentroidalModelInfo info,
+          const PinocchioEndEffectorKinematics& eeKinematics, const PinocchioEndEffectorKinematics& armEeKinematics,
+          ros::NodeHandle& controller_nh);
+  virtual vector_t update(const vector_t& stateDesired, const vector_t& inputDesired, const vector_t& rbdStateMeasured,
+                          size_t mode, scalar_t period, scalar_t time);
 
-    virtual void loadTasksSetting(const std::string& taskFile, bool verbose);
+  virtual void loadTasksSetting(const std::string& taskFile, bool verbose);
 
 protected:
-    void updateMeasured(const vector_t& rbdStateMeasured);
-    void updateDesired(const vector_t& stateDesired, const vector_t& inputDesired, ocs2::scalar_t period);
-    vector_t updateCmd(vector_t x_optimal);
+  vector_t hierarchicalQp(const vector_t& inputDesired);
+  void updateMeasured(const vector_t& rbdStateMeasured, ocs2::scalar_t period);
+  void updateDesired(const vector_t& stateDesired, const vector_t& inputDesired, ocs2::scalar_t period);
+  vector_t updateCmd(vector_t x_optimal);
 
-    size_t getNumDecisionVars() const { return numDecisionVars_; }
+  size_t getNumDecisionVars() const
+  {
+    return numDecisionVars_;
+  }
 
-    Task formulateFloatingBaseEomTask();
-    Task formulateTorqueLimitsTask();
-    Task formulateNoContactMotionTask();
-    Task formulateFrictionConeTask();
+  Task formulateFloatingBaseEomTask();
+  Task formulateTorqueLimitsTask();
+  Task formulateNoContactMotionTask();
+  Task formulateFrictionConeTask();
 
-    Task formulateBaseHeightMotionTask();
-    Task formulateBaseAngularMotionTask();
-    Task formulateBaseXYLinearAccelTask();
-    Task formulateSwingLegTask();
+  Task formulateBaseHeightMotionTask();
+  Task formulateBaseAngularMotionTask();
+  Task formulateBaseXYLinearAccelTask();
+  Task formulateSwingLegTask();
 
-    Task formulateArmJointNomalTrackingTask();
-    Task formulateEeLinearMotionTrackingTask();
-    Task formulateEeAngularMotionTrackingTask();
-    Task formulateEeAngularMotionDampTrackingTask();
-    Task formulatejointDampTrackingTask();
+  Task formulateArmJointNomalTrackingTask(const scalar_t& kp, const scalar_t& kd);
+  Task formulateEeLinearMotionTrackingTask();
+  Task formulateEeAngularMotionTrackingTask();
+  Task formulateEeAngularMotionDampTrackingTask();
+  Task formulatejointDampTrackingTask();
 
-    Task formulateContactForceTask(const vector_t& inputDesired) const;
+  Task formulateFootContactForceTask(const vector_t& inputDesired) const;
+  Task formulateEndEffectorImpedenceTask(const scalar_t& M, const scalar_t& kp, const scalar_t& kd);
+
 private:
-    // void dynamicCallback(qm_wbc::WbcWeightConfig& config, uint32_t /*level*/);
-    void setParam();
-    void publishMsg();
+  // void dynamicCallback(qm_wbc::WbcWeightConfig& config, uint32_t /*level*/);
+  void setParam();
+  void publishMsg();
 
-    std::shared_ptr<dynamic_reconfigure::Server<qm_wbc::WbcWeightConfig>> dynamic_srv_{};
+  std::shared_ptr<dynamic_reconfigure::Server<qm_wbc::WbcWeightConfig>> dynamic_srv_{};
 
-    size_t numDecisionVars_;
-    PinocchioInterface pinocchioInterfaceMeasured_, pinocchioInterfaceDesired_;
-    CentroidalModelInfo info_;
-    CentroidalModelPinocchioMapping mapping_;
+  size_t numDecisionVars_;
+  PinocchioInterface pinocchioInterfaceMeasured_, pinocchioInterfaceDesired_;
+  CentroidalModelInfo info_;
+  CentroidalModelPinocchioMapping mapping_;
 
-    std::unique_ptr<PinocchioEndEffectorKinematics> eeKinematics_, armEeKinematics_;
+  std::unique_ptr<PinocchioEndEffectorKinematics> eeKinematics_, armEeKinematics_;
 
-    contact_flag_t contactFlag_{};
-    size_t numContacts_{};
+  contact_flag_t contactFlag_{};
+  size_t numContacts_{};
 
-    vector_t qMeasured_, vMeasured_, inputLast_;
-    vector_t qDesired_, vDesired_, baseAccDesired_;
-    vector_t jointAccel_;
-    matrix_t j_, dj_;
-    matrix_t arm_j_, arm_dj_;
-    matrix_t base_j_, base_dj_;
+  vector_t qMeasured_, vMeasured_, inputLast_;
+  vector_t qDesired_, vDesired_, baseAccDesired_;
+  vector3_t eeAccMeasured_;
+  vector3_t eeVelLastMeasured_;
+  vector_t jointAccel_;
+  matrix_t j_, dj_;
+  matrix_t arm_j_, arm_dj_;
+  matrix_t base_j_, base_dj_;
 
-    // Task Parameters:
-    vector_t legTorqueLimits_, armTorqueLimits_;
-    scalar_t frictionCoeff_{}, swingKp_{}, swingKd_{};
+  // Task Parameters:
+  vector_t legTorqueLimits_, armTorqueLimits_;
+  scalar_t frictionCoeff_{}, swingKp_{}, swingKd_{};
 
-    scalar_t baseHeightKp_{}, baseHeightKd_{};
-    scalar_t baseAngularKp_{}, baseAngularKd_{};
+  scalar_t baseHeightKp_{}, baseHeightKd_{};
+  scalar_t baseAngularKp_{}, baseAngularKd_{};
 
-    matrix_t jointKp_, jointKd_;
-    vector_t d_arm_;
+  matrix_t jointKp_, jointKd_;
+  vector_t d_arm_;
 
-    matrix_t armEeLinearKp_{}, armEeLinearKd_{};
-    matrix_t armEeAngularKp_{}, armEeAngularKd_{};
-    vector_t d_ee_, da_ee_;
+  matrix_t armEeLinearKp_{}, armEeLinearKd_{};
+  matrix_t armEeAngularKp_{}, armEeAngularKd_{};
+  vector_t d_ee_, da_ee_;
 
-    size_t armEeFrameIdx_{};
+  size_t armEeFrameIdx_{};
 
-    Eigen::Matrix3d zyx2xyz_;
+  Eigen::Matrix3d zyx2xyz_;
 
-    ros::Publisher ee_pub_;
-    scalar_t last_time_;
+  ros::Publisher ee_pub_;
+  scalar_t last_time_;
 };
 
 template <typename T>
@@ -115,37 +126,41 @@ using DMat = typename Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
 template <typename T>
 void pseudoInverse(DMat<T> const& matrix, double sigmaThreshold, DMat<T>& invMatrix)
 {
-    if ((1 == matrix.rows()) && (1 == matrix.cols())) {
-        invMatrix.resize(1, 1);
-        if (matrix.coeff(0, 0) > sigmaThreshold) {
-            invMatrix.coeffRef(0, 0) = 1.0 / matrix.coeff(0, 0);
-        }
-        else {
-            invMatrix.coeffRef(0, 0) = 0.0;
-        }
-        return;
-    }
-
-    Eigen::JacobiSVD<DMat<T>> svd(matrix, Eigen::ComputeThinU | Eigen::ComputeThinV);
-    // not sure if we need to svd.sort()... probably not
-    int const nrows(svd.singularValues().rows());
-    DMat<T> invS;
-    invS = DMat<T>::Zero(nrows, nrows);
-    for (int ii(0); ii < nrows; ++ii)
+  if ((1 == matrix.rows()) && (1 == matrix.cols()))
+  {
+    invMatrix.resize(1, 1);
+    if (matrix.coeff(0, 0) > sigmaThreshold)
     {
-        if (svd.singularValues().coeff(ii) > sigmaThreshold) {
-            invS.coeffRef(ii, ii) = 1.0 / svd.singularValues().coeff(ii);
-        }
-        else {
-            // invS.coeffRef(ii, ii) = 1.0/ sigmaThreshold;
-            // printf("sigular value is too small: %f\n",
-            // svd.singularValues().coeff(ii));
-        }
+      invMatrix.coeffRef(0, 0) = 1.0 / matrix.coeff(0, 0);
     }
-    invMatrix = svd.matrixV() * invS * svd.matrixU().transpose();
+    else
+    {
+      invMatrix.coeffRef(0, 0) = 0.0;
+    }
+    return;
+  }
+
+  Eigen::JacobiSVD<DMat<T>> svd(matrix, Eigen::ComputeThinU | Eigen::ComputeThinV);
+  // not sure if we need to svd.sort()... probably not
+  int const nrows(svd.singularValues().rows());
+  DMat<T> invS;
+  invS = DMat<T>::Zero(nrows, nrows);
+  for (int ii(0); ii < nrows; ++ii)
+  {
+    if (svd.singularValues().coeff(ii) > sigmaThreshold)
+    {
+      invS.coeffRef(ii, ii) = 1.0 / svd.singularValues().coeff(ii);
+    }
+    else
+    {
+      // invS.coeffRef(ii, ii) = 1.0/ sigmaThreshold;
+      // printf("sigular value is too small: %f\n",
+      // svd.singularValues().coeff(ii));
+    }
+  }
+  invMatrix = svd.matrixV() * invS * svd.matrixU().transpose();
 }
 
-}
+}  // namespace qm
 
-
-#endif //SRC_WBCBASE_H
+#endif  // SRC_WBCBASE_H

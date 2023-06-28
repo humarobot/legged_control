@@ -813,7 +813,7 @@
         upper="3."
         effort="15.0"
         velocity="10.0" />
-      <dynamics damping="0.1" friction="0.01"/>
+      <dynamics damping="0.1" friction="0.2"/>
     </joint>
     <link name="wrist_link">
       <inertial>
@@ -866,7 +866,7 @@
         upper="1.7"
         effort="15.0"
         velocity="10.0" />
-      <dynamics damping="0.1" friction="0.01"/>
+      <dynamics damping="0.1" friction="0.2"/>
     </joint>
     <link name="hand_link">
       <inertial>
@@ -919,7 +919,7 @@
         upper="10."
         effort="15.0"
         velocity="10.0" />
-      <dynamics damping="0.1" friction="0.01"/>
+      <dynamics damping="0.1" friction="0.2"/>
     </joint>
 
     <xacro:IMU connected_to="base" imu_name="unitree_imu" xyz="0. 0. 0." rpy="0. 0. 0."/>

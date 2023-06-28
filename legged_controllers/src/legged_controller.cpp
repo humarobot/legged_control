@@ -18,7 +18,7 @@
 #include <ocs2_msgs/mpc_observation.h>
 #include <ocs2_ddp/GaussNewtonDDP_MPC.h>
 #include <ocs2_sqp/MultipleShootingMpc.h>
-#include <qm_wbc/HierarchicalWbc.h>
+#include <qm_wbc/WbcBase.h>
 
 #include <legged_estimation/from_topice_estimate.h>
 #include <legged_estimation/linear_kalman_filter.h>
@@ -95,7 +95,7 @@ bool LeggedController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHand
   std::vector<std::string> eeName{"hand_link"};
   armEeKinematicsPtr_ = std::make_shared<PinocchioEndEffectorKinematics>(legged_interface_->getPinocchioInterface(), pinocchio_mapping,
                                                                            eeName);
-  wbc_ = std::make_shared<qm::HierarchicalWbc>(legged_interface_->getPinocchioInterface(), legged_interface_->getCentroidalModelInfo(),
+  wbc_ = std::make_shared<qm::WbcBase>(legged_interface_->getPinocchioInterface(), legged_interface_->getCentroidalModelInfo(),
                                             *eeKinematicsPtr_, *armEeKinematicsPtr_, controller_nh);
   wbc_->loadTasksSetting(task_file, true);
 

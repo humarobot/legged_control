@@ -55,7 +55,6 @@ link_directories(
 add_library(${PROJECT_NAME}
         src/HoQp.cpp
         src/WbcBase.cpp
-        src/HierarchicalWbc.cpp
         )
 add_dependencies(${PROJECT_NAME}
         ${catkin_EXPORTED_TARGETS}
