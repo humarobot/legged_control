@@ -357,7 +357,7 @@ vector_t WbcBase::computeCommandJointTorque(vector_t x_optimal)
   Mj = data.M.bottomRows(info_.actuatedDofNum);
   Jj_T = j_.transpose().bottomRows(info_.actuatedDofNum);
   hj = data.nle.bottomRows(info_.actuatedDofNum);
-  matrix_t a = (matrix_t(info_.actuatedDofNum, getNumDecisionVars()) << Mj, -Jj_T).finished();
+  matrix_t a = (matrix_t(info_.actuatedDofNum, numDecisionVars_) << Mj, -Jj_T).finished();
 
   vector_t torque_optimal = a * x_optimal + hj;
 
