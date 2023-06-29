@@ -26,8 +26,8 @@ namespace qm
 {
 using namespace ocs2;
 
-WbcBase::WbcBase(const ocs2::PinocchioInterface& pinocchioInterface, ocs2::CentroidalModelInfo info,
-                 const ocs2::PinocchioEndEffectorKinematics& eeKinematics,
+WbcBase::WbcBase(const PinocchioInterface& pinocchioInterface, CentroidalModelInfo info,
+                 const PinocchioEndEffectorKinematics& eeKinematics,
                  const PinocchioEndEffectorKinematics& armEeKinematics, ros::NodeHandle& controller_nh)
   : pinocchioInterfaceMeasured_(pinocchioInterface)
   , pinocchioInterfaceDesired_(pinocchioInterface)
@@ -37,6 +37,9 @@ WbcBase::WbcBase(const ocs2::PinocchioInterface& pinocchioInterface, ocs2::Centr
   , armEeKinematics_(armEeKinematics.clone())
 {
   numDecisionVars_ = info_.generalizedCoordinatesNum + 3 * info_.numThreeDofContacts + 6;  // \dot v, f
+  numGeneralizedCoords_ = info_.generalizedCoordinatesNum;
+  numContactForcesVars_ = 3 * info_.numThreeDofContacts + 6;
+
   qMeasured_ = vector_t(info_.generalizedCoordinatesNum);
   vMeasured_ = vector_t(info_.generalizedCoordinatesNum);
   qDesired_ = vector_t(info_.generalizedCoordinatesNum);
@@ -141,43 +144,19 @@ void WbcBase::setParam()
   ROS_INFO_STREAM("\033[32m Update the wbc param. \033[0m");
 }
 
-vector_t WbcBase::update(const ocs2::vector_t& stateDesired, const ocs2::vector_t& inputDesired,
-                         const ocs2::vector_t& rbdStateMeasured, size_t mode, ocs2::scalar_t period, scalar_t time)
+vector_t WbcBase::update(const vector_t& stateDesired, const vector_t& inputDesired, const vector_t& rbdStateMeasured,
+                         size_t mode, scalar_t period, scalar_t time)
 {
-  contactFlag_ = modeNumber2StanceLeg(mode);
-  numContacts_ = 0;
-  for (bool flag : contactFlag_)
-  {
-    if (flag)
-    {
-      numContacts_++;
-    }
-  }
+  updateContactInfo(mode);
   updateMeasured(rbdStateMeasured, period);
   updateDesired(stateDesired, inputDesired, period);
-  if (time - last_time_ > ros::Duration(0.01).toSec())
-  {
-    publishMsg();
-    last_time_ = time;
-  }
-  Task task0 = formulateFloatingBaseEomTask();
-  Task task1 = formulateTorqueLimitsTask() + formulateNoContactMotionTask() + formulateFrictionConeTask();
-  Task task2 = formulateArmJointNomalTrackingTask(500, 1);
-  Task task3 = formulateSwingLegTask() + formulateFootContactForceTask(inputDesired) +
-               formulateEndEffectorImpedenceTask(0, 0, 0);
-  // if(time>3){
-  //   task2 = formulateArmJointNomalTrackingTask(10,0);
-  //   task3 = formulateSwingLegTask() + formulateFootContactForceTask(inputDesired) +
-  //   formulateEndEffectorImpedenceTask(0.,1000,0);
+  // if (time - last_time_ > ros::Duration(0.01).toSec())
+  // {
+  //   publishMsg();
+  //   last_time_ = time;
   // }
-
-  Task task4 = formulateBaseHeightMotionTask() + formulateBaseAngularMotionTask();
-
-  HoQp hoQp(task4,
-            std::make_shared<HoQp>(
-                task3, std::make_shared<HoQp>(task2, std::make_shared<HoQp>(task1, std::make_shared<HoQp>(task0)))));
-  vector_t x_optimal = hoQp.getSolutions();
-  return WbcBase::updateCmd(x_optimal);
+  auto x_optimal = computeHierarchicalTask(inputDesired);
+  return WbcBase::computeCommandJointTorque(x_optimal);
 }
 
 void WbcBase::publishMsg()
@@ -208,7 +187,7 @@ void WbcBase::publishMsg()
   ee_pub_.publish(msg);
 }
 
-void WbcBase::updateMeasured(const ocs2::vector_t& rbdStateMeasured, ocs2::scalar_t period)
+void WbcBase::updateMeasured(const vector_t& rbdStateMeasured, scalar_t period)
 {
   qMeasured_.setZero();
   vMeasured_.setZero();
@@ -225,61 +204,24 @@ void WbcBase::updateMeasured(const ocs2::vector_t& rbdStateMeasured, ocs2::scala
   const auto& model = pinocchioInterfaceMeasured_.getModel();
   auto& data = pinocchioInterfaceMeasured_.getData();
 
-  // For floating base EoM task
+  //* update pinocchio interface
+  // TODO: get total time elapsed
   pinocchio::forwardKinematics(model, data, qMeasured_, vMeasured_);
   pinocchio::computeJointJacobians(model, data);
   pinocchio::updateFramePlacements(model, data);
   pinocchio::crba(model, data, qMeasured_);
-
   data.M.triangularView<Eigen::StrictlyLower>() = data.M.transpose().triangularView<Eigen::StrictlyLower>();
-
-  // For floating base EoM task
   pinocchio::nonLinearEffects(model, data, qMeasured_, vMeasured_);
-  j_ = matrix_t(3 * info_.numThreeDofContacts + 6, info_.generalizedCoordinatesNum);
-  j_.setZero();
-  for (size_t i = 0; i < info_.numThreeDofContacts; ++i)
-  {
-    Eigen::Matrix<scalar_t, 6, Eigen::Dynamic> jac;
-    jac.setZero(6, info_.generalizedCoordinatesNum);
-    pinocchio::getFrameJacobian(model, data, info_.endEffectorFrameIndices[i], pinocchio::LOCAL_WORLD_ALIGNED, jac);
-    j_.block(3 * i, 0, 3, info_.generalizedCoordinatesNum) = jac.template topRows<3>();
-  }
-  Eigen::Matrix<scalar_t, 6, Eigen::Dynamic> jac;
-  jac.setZero(6, info_.generalizedCoordinatesNum);
-  pinocchio::getFrameJacobian(model, data, model.getBodyId("hand_link"), pinocchio::LOCAL_WORLD_ALIGNED, jac);
-  j_.block(3 * 4, 0, 6, info_.generalizedCoordinatesNum) = jac.template topRows<6>();
-
-  // For not contact motion task
+  j_ = computeStackedJacobian(pinocchioInterfaceMeasured_);
   pinocchio::computeJointJacobiansTimeVariation(model, data, qMeasured_, vMeasured_);
-  dj_ = matrix_t(3 * info_.numThreeDofContacts + 6, info_.generalizedCoordinatesNum);
-  dj_.setZero();
-  for (size_t i = 0; i < info_.numThreeDofContacts; ++i)
-  {
-    Eigen::Matrix<scalar_t, 6, Eigen::Dynamic> jac;
-    jac.setZero(6, info_.generalizedCoordinatesNum);
-    pinocchio::getFrameJacobianTimeVariation(model, data, info_.endEffectorFrameIndices[i],
-                                             pinocchio::LOCAL_WORLD_ALIGNED, jac);
-    dj_.block(3 * i, 0, 3, info_.generalizedCoordinatesNum) = jac.template topRows<3>();
-  }
-  Eigen::Matrix<scalar_t, 6, Eigen::Dynamic> djac;
-  djac.setZero(6, info_.generalizedCoordinatesNum);
-  pinocchio::getFrameJacobianTimeVariation(model, data, model.getBodyId("hand_link"), pinocchio::LOCAL_WORLD_ALIGNED,
-                                           djac);
-  dj_.block(3 * 4, 0, 6, info_.generalizedCoordinatesNum) = djac.template topRows<6>();
+  dj_ = computeStackedJacobianTimeVariation(pinocchioInterfaceMeasured_);
 
-  // For base motion tracking task
-  Eigen::Matrix<scalar_t, 6, Eigen::Dynamic> base_j, base_dj;
-  base_j.setZero(6, info_.generalizedCoordinatesNum);
-  base_dj.setZero(6, info_.generalizedCoordinatesNum);
-  pinocchio::getFrameJacobian(model, data, model.getBodyId("base"), pinocchio::LOCAL_WORLD_ALIGNED, base_j);
+  base_j_ = matrix_t::Zero(6, numGeneralizedCoords_);
+  base_dj_ = matrix_t::Zero(6, numGeneralizedCoords_);
+  pinocchio::getFrameJacobian(model, data, model.getBodyId("base"), pinocchio::LOCAL_WORLD_ALIGNED, base_j_);
   pinocchio::getFrameJacobianTimeVariation(model, data, model.getBodyId("base"), pinocchio::LOCAL_WORLD_ALIGNED,
-                                           base_dj);
-  base_j_.setZero();
-  base_j_ = base_j;
-  base_dj_.setZero();
-  base_dj_ = base_dj;
+                                           base_dj_);
 
-  // For armEE motion tracking
   arm_j_.setZero();
   arm_dj_.setZero();  // must
   pinocchio::getFrameJacobian(model, data, armEeFrameIdx_, pinocchio::LOCAL_WORLD_ALIGNED, arm_j_);
@@ -292,8 +234,7 @@ void WbcBase::updateMeasured(const ocs2::vector_t& rbdStateMeasured, ocs2::scala
   eeVelLastMeasured_ = eeVelMeasured[0];
 }
 
-void WbcBase::updateDesired(const ocs2::vector_t& stateDesired, const ocs2::vector_t& inputDesired,
-                            ocs2::scalar_t period)
+void WbcBase::updateDesired(const vector_t& stateDesired, const vector_t& inputDesired, scalar_t period)
 {
   const auto& model = pinocchioInterfaceDesired_.getModel();
   auto& data = pinocchioInterfaceDesired_.getData();
@@ -303,19 +244,97 @@ void WbcBase::updateDesired(const ocs2::vector_t& stateDesired, const ocs2::vect
 
   mapping_.setPinocchioInterface(pinocchioInterfaceDesired_);
   qDesired_ = mapping_.getPinocchioJointPosition(stateDesired);
+  vDesired_ = mapping_.getPinocchioJointVelocity(stateDesired, inputDesired);
+
   pinocchio::forwardKinematics(model, data, qDesired_);
   pinocchio::computeJointJacobians(model, data, qDesired_);
   pinocchio::updateFramePlacements(model, data);
   updateCentroidalDynamics(pinocchioInterfaceDesired_, info_, qDesired_);
-
-  vDesired_ = mapping_.getPinocchioJointVelocity(stateDesired, inputDesired);
-
   pinocchio::forwardKinematics(model, data, qDesired_, vDesired_);
 
-  // update base acc desired
+  baseAccDesired_ = computeDesiredBaseAccel(pinocchioInterfaceDesired_, inputDesired, period);
+}
+
+void WbcBase::updateContactInfo(size_t mode)
+{
+  contactFlag_ = modeNumber2StanceLeg(mode);
+  numContacts_ = 0;
+  for (bool flag : contactFlag_)
+  {
+    if (flag)
+    {
+      numContacts_++;
+    }
+  }
+}
+
+vector_t WbcBase::computeHierarchicalTask(const vector_t& inputDesired)
+{
+  Task task0 = formulateFloatingBaseEomTask();
+  Task task1 = formulateTorqueLimitsTask() + formulateNoContactMotionTask() + formulateFrictionConeTask();
+  Task task2 = formulateArmJointNomalTrackingTask(500, 1);
+  Task task3 = formulateSwingLegTask() + formulateFootContactForceTask(inputDesired) +
+               formulateEndEffectorImpedenceTask(0, 0, 0);
+  // if(time>3){
+  //   task2 = formulateArmJointNomalTrackingTask(10,0);
+  //   task3 = formulateSwingLegTask() + formulateFootContactForceTask(inputDesired) +
+  //   formulateEndEffectorImpedenceTask(0.,1000,0);
+  // }
+
+  Task task4 = formulateBaseHeightMotionTask() + formulateBaseAngularMotionTask();
+
+  HoQp hoQp(task4,
+            std::make_shared<HoQp>(
+                task3, std::make_shared<HoQp>(task2, std::make_shared<HoQp>(task1, std::make_shared<HoQp>(task0)))));
+  vector_t&& x_optimal = hoQp.getSolutions();
+  return x_optimal;
+}
+
+matrix_t WbcBase::computeStackedJacobian(PinocchioInterface& pin)
+{
+  const auto& model = pin.getModel();
+  auto& data = pin.getData();
+  matrix_t j_s = matrix_t::Zero(numContactForcesVars_, numGeneralizedCoords_);
+  for (size_t i = 0; i < info_.numThreeDofContacts; ++i)
+  {
+    Eigen::Matrix<scalar_t, 6, Eigen::Dynamic> jac;
+    jac.setZero(6, numGeneralizedCoords_);
+    pinocchio::getFrameJacobian(model, data, info_.endEffectorFrameIndices[i], pinocchio::LOCAL_WORLD_ALIGNED, jac);
+    j_s.block(3 * i, 0, 3, numGeneralizedCoords_) = jac.template topRows<3>();
+  }
+  Eigen::Matrix<scalar_t, 6, Eigen::Dynamic> jac_arm;
+  jac_arm.setZero(6, numGeneralizedCoords_);
+  pinocchio::getFrameJacobian(model, data, armEeFrameIdx_, pinocchio::LOCAL_WORLD_ALIGNED, jac_arm);
+  j_s.block(3 * 4, 0, 6, numGeneralizedCoords_) = jac_arm.template topRows<6>();
+  return j_s;
+}
+
+matrix_t WbcBase::computeStackedJacobianTimeVariation(PinocchioInterface& pin)
+{
+  const auto& model = pin.getModel();
+  auto& data = pin.getData();
+  matrix_t dj_s = matrix_t::Zero(numContactForcesVars_, numGeneralizedCoords_);
+  for (size_t i = 0; i < info_.numThreeDofContacts; ++i)
+  {
+    Eigen::Matrix<scalar_t, 6, Eigen::Dynamic> djac;
+    djac.setZero(6, numGeneralizedCoords_);
+    pinocchio::getFrameJacobianTimeVariation(model, data, info_.endEffectorFrameIndices[i],
+                                             pinocchio::LOCAL_WORLD_ALIGNED, djac);
+    dj_s.block(3 * i, 0, 3, numGeneralizedCoords_) = djac.template topRows<3>();
+  }
+  Eigen::Matrix<scalar_t, 6, Eigen::Dynamic> djac_arm;
+  djac_arm.setZero(6, numGeneralizedCoords_);
+  pinocchio::getFrameJacobianTimeVariation(model, data, armEeFrameIdx_, pinocchio::LOCAL_WORLD_ALIGNED, djac_arm);
+  dj_s.block(3 * 4, 0, 6, numGeneralizedCoords_) = djac_arm.template topRows<6>();
+  return dj_s;
+}
+
+vector_t WbcBase::computeDesiredBaseAccel(PinocchioInterface& pin, const vector_t& inputDesired, scalar_t period)
+{
+  const auto& model = pin.getModel();
+  auto& data = pin.getData();
   jointAccel_ = centroidal_model::getJointVelocities(inputDesired - inputLast_, info_) / period;
   inputLast_ = inputDesired;
-
   const auto& A = getCentroidalMomentumMatrix(pinocchioInterfaceDesired_);
   const Matrix6 Ab = A.template leftCols<6>();
   const auto AbInv = computeFloatingBaseCentroidalMomentumMatrixInverse(Ab);
@@ -325,9 +344,26 @@ void WbcBase::updateDesired(const ocs2::vector_t& stateDesired, const ocs2::vect
       info_.robotMass * getNormalizedCentroidalMomentumRate(pinocchioInterfaceDesired_, info_, inputDesired);
   centroidalMomentumRate.noalias() -= ADot * vDesired_;
   centroidalMomentumRate.noalias() -= Aj * jointAccel_;
+  vector_t baseAccDesired = AbInv * centroidalMomentumRate;
+  return baseAccDesired;
+}
 
-  baseAccDesired_.setZero();
-  baseAccDesired_ = AbInv * centroidalMomentumRate;
+vector_t WbcBase::computeCommandJointTorque(vector_t x_optimal)
+{
+  auto& data = pinocchioInterfaceMeasured_.getData();
+
+  matrix_t Mj, Jj_T;
+  vector_t hj;
+  Mj = data.M.bottomRows(info_.actuatedDofNum);
+  Jj_T = j_.transpose().bottomRows(info_.actuatedDofNum);
+  hj = data.nle.bottomRows(info_.actuatedDofNum);
+  matrix_t a = (matrix_t(info_.actuatedDofNum, getNumDecisionVars()) << Mj, -Jj_T).finished();
+
+  vector_t torque_optimal = a * x_optimal + hj;
+
+  vector_t cmd = (vector_t(numDecisionVars_ + info_.actuatedDofNum) << x_optimal, torque_optimal).finished();
+
+  return cmd;
 }
 
 // Tracking base xy linear motion task
@@ -758,24 +794,6 @@ Task WbcBase::formulateEndEffectorImpedenceTask(const scalar_t& M, const scalar_
   b.head(3) -= linear_acc;
 
   return { a, b, matrix_t(), vector_t() };
-}
-
-vector_t WbcBase::updateCmd(ocs2::vector_t x_optimal)
-{
-  auto& data = pinocchioInterfaceMeasured_.getData();
-
-  matrix_t Mj, Jj_T;
-  vector_t hj;
-  Mj = data.M.bottomRows(info_.actuatedDofNum);
-  Jj_T = j_.transpose().bottomRows(info_.actuatedDofNum);
-  hj = data.nle.bottomRows(info_.actuatedDofNum);
-  matrix_t a = (matrix_t(info_.actuatedDofNum, getNumDecisionVars()) << Mj, -Jj_T).finished();
-
-  vector_t torque_optimal = a * x_optimal + hj;
-
-  vector_t cmd = (vector_t(numDecisionVars_ + info_.actuatedDofNum) << x_optimal, torque_optimal).finished();
-
-  return cmd;
 }
 
 void WbcBase::loadTasksSetting(const std::string& taskFile, bool verbose)
