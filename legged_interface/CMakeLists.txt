@@ -70,3 +70,11 @@ install(DIRECTORY include/${PROJECT_NAME}/
         DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
         FILES_MATCHING PATTERN "*.h"
         )
+
+add_executable(test_trapzoidal
+  src/test/test_arm_trajectory_planner.cpp
+  src/reference/arm_trajectory_planner.cpp
+)
+target_link_libraries(test_trapzoidal
+  gtest_main
+)

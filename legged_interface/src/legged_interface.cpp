@@ -155,11 +155,12 @@ void LeggedInterface::setupOptimalControlProblem(const std::string& taskFile, co
         modelSettings_.recompileLibrariesCppAd, modelSettings_.verboseCppAd));
     // problemPtr_->stateSoftConstraintPtr->add(hand_name + "_fixPosition", getFixPositionConstraint());
     problemPtr_->stateSoftConstraintPtr->add(hand_name + "_armEndEffector",
-                                             getArmEndEffectorConstraint(*ee_kinematics_ptr, taskFile, "endEffector", verbose));
+                                             getArmEndEffectorConstraint(*ee_kinematics_ptr, taskFile, "endEffector",
+                                                                         verbose));
+    problemPtr_->finalSoftConstraintPtr->add(
+        "finalEndEffector", getArmEndEffectorConstraint(*ee_kinematics_ptr, taskFile, "finalEndEffector", verbose));
     problemPtr_->softConstraintPtr->add("armJointLimits",
                                         getJointLimitSoftConstraint(*pinocchioInterfacePtr_, taskFile, verbose));
-    problemPtr_->finalSoftConstraintPtr->add("finalEndEffector",
-                                             getArmEndEffectorConstraint(*ee_kinematics_ptr, taskFile,"finalEndEffector", verbose));
     // problemPtr_->softConstraintPtr->add(hand_name + "_zeroVelocity", getArmZeroVelocityConstraint());
     // problemPtr_->equalityConstraintPtr->add(hand_name + "_zeroWrench", getZeroWrenchConstraint(i));
   }

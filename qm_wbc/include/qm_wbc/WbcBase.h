@@ -42,7 +42,7 @@ protected:
   void updateMeasured(const vector_t& rbdStateMeasured, ocs2::scalar_t period);
   void updateDesired(const vector_t& stateDesired, const vector_t& inputDesired, ocs2::scalar_t period);
   void updateContactInfo(size_t mode);
-  vector_t computeHierarchicalTask(const vector_t& inputDesired);
+  vector_t computeHierarchicalTask(const vector_t& inputDesired,scalar_t time);
   vector_t computeCommandJointTorque(vector_t x_optimal);
   matrix_t computeStackedJacobian(PinocchioInterface&);
   matrix_t computeStackedJacobianTimeVariation(PinocchioInterface&);

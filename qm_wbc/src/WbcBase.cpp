@@ -155,7 +155,7 @@ vector_t WbcBase::update(const vector_t& stateDesired, const vector_t& inputDesi
   //   publishMsg();
   //   last_time_ = time;
   // }
-  auto x_optimal = computeHierarchicalTask(inputDesired);
+  auto x_optimal = computeHierarchicalTask(inputDesired,time);
   return WbcBase::computeCommandJointTorque(x_optimal);
 }
 
@@ -268,18 +268,18 @@ void WbcBase::updateContactInfo(size_t mode)
   }
 }
 
-vector_t WbcBase::computeHierarchicalTask(const vector_t& inputDesired)
+vector_t WbcBase::computeHierarchicalTask(const vector_t& inputDesired,scalar_t time)
 {
   Task task0 = formulateFloatingBaseEomTask();
   Task task1 = formulateTorqueLimitsTask() + formulateNoContactMotionTask() + formulateFrictionConeTask();
-  Task task2 = formulateArmJointNomalTrackingTask(500, 1);
+  Task task2 = formulateArmJointNomalTrackingTask(300, 10);
   Task task3 = formulateSwingLegTask() + formulateFootContactForceTask(inputDesired) +
                formulateEndEffectorImpedenceTask(0, 0, 0);
-  // if(time>3){
-  //   task2 = formulateArmJointNomalTrackingTask(10,0);
-  //   task3 = formulateSwingLegTask() + formulateFootContactForceTask(inputDesired) +
-  //   formulateEndEffectorImpedenceTask(0.,1000,0);
-  // }
+  if(time>3){
+    task2 = formulateArmJointNomalTrackingTask(10,0);
+    task3 = formulateSwingLegTask() + formulateFootContactForceTask(inputDesired) +
+    formulateEndEffectorImpedenceTask(0.,500,0);
+  }
 
   Task task4 = formulateBaseHeightMotionTask() + formulateBaseAngularMotionTask();
 

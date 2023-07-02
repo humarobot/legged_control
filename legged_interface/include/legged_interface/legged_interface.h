@@ -19,6 +19,7 @@
 
 #include <ocs2_legged_robot/common/ModelSettings.h>
 #include <ocs2_legged_robot/reference_manager/SwitchedModelReferenceManager.h>
+// #include "lion_armed_reference_manager.hpp"
 
 namespace legged
 {
