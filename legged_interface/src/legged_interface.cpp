@@ -87,7 +87,7 @@ void LeggedInterface::setupOptimalControlProblem(const std::string& taskFile, co
                                  centroidalModelInfo_.numThreeDofContacts));
 
   // Mode schedule manager
-  referenceManagerPtr_ = std::make_shared<SwitchedModelReferenceManager>(loadGaitSchedule(referenceFile, verbose),
+  referenceManagerPtr_ = std::make_shared<LionArmedReferenceManager>(loadGaitSchedule(referenceFile, verbose),
                                                                          std::move(swing_trajectory_planner));
 
   // Optimal control problem

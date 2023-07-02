@@ -19,7 +19,7 @@
 
 #include <ocs2_legged_robot/common/ModelSettings.h>
 #include <ocs2_legged_robot/reference_manager/SwitchedModelReferenceManager.h>
-// #include "lion_armed_reference_manager.hpp"
+#include "reference/lion_armed_reference_manager.hpp"
 
 namespace legged
 {
@@ -125,7 +125,8 @@ protected:
   CentroidalModelInfo centroidalModelInfo_;
 
   std::unique_ptr<OptimalControlProblem> problemPtr_;
-  std::shared_ptr<SwitchedModelReferenceManager> referenceManagerPtr_;
+  // std::shared_ptr<SwitchedModelReferenceManager> referenceManagerPtr_;
+  std::shared_ptr<LionArmedReferenceManager> referenceManagerPtr_;
 
   rollout::Settings rolloutSettings_;
   std::unique_ptr<RolloutBase> rolloutPtr_;
