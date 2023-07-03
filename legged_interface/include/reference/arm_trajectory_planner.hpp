@@ -135,6 +135,7 @@ public:
   vector_t getTwistConstraint(scalar_t time) const;
   vector3_t getLinearVelocityConstraint(scalar_t time) const;
   vector3_t getAngularVelocityConstraint(scalar_t time) const;
+  vector3_t getLinearPositionConstraint(scalar_t time) const;
 
   scalar_t getPathPointsSize() const;
 

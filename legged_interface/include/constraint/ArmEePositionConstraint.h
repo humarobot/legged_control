@@ -6,7 +6,9 @@
 #include <ocs2_robotic_tools/end_effector/EndEffectorKinematics.h>
 
 #include <ocs2_core/constraint/StateConstraint.h>
-#include <ocs2_oc/synchronized_module/ReferenceManager.h>
+// #include <ocs2_oc/synchronized_module/ReferenceManager.h>
+#include "reference/lion_armed_reference_manager.hpp"
+#include "reference/arm_trajectory_planner.hpp"
 
 namespace ocs2 {
 namespace legged_robot {
@@ -16,7 +18,7 @@ class ArmEePositionConstraint final : public StateConstraint {
   using vector3_t = Eigen::Matrix<scalar_t, 3, 1>;
   using quaternion_t = Eigen::Quaternion<scalar_t>;
 
-  ArmEePositionConstraint(const EndEffectorKinematics<scalar_t>& endEffectorKinematics, const ReferenceManager& referenceManager);
+  ArmEePositionConstraint(const EndEffectorKinematics<scalar_t>& endEffectorKinematics, const LionArmedReferenceManager& referenceManager);
   ~ArmEePositionConstraint() override = default;
   ArmEePositionConstraint* clone() const override { return new ArmEePositionConstraint(*endEffectorKinematicsPtr_, *referenceManagerPtr_); }
 
@@ -35,7 +37,7 @@ class ArmEePositionConstraint final : public StateConstraint {
   vector3_t eeDesiredPosition_;
   quaternion_t eeDesiredOrientation_;
   std::unique_ptr<EndEffectorKinematics<scalar_t>> endEffectorKinematicsPtr_;
-  const ReferenceManager* referenceManagerPtr_;
+  const LionArmedReferenceManager* referenceManagerPtr_;
 };
 
 }  // namespace mobile_manipulator

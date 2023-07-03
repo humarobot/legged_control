@@ -29,5 +29,9 @@ void LionArmedReferenceManager::modifyReferences(scalar_t initTime, scalar_t fin
   swingTrajectoryPtr_->update(modeSchedule, terrainHeight);
 }
 
+vector3_t LionArmedReferenceManager::getReferencePosition(scalar_t time) const{
+  return armTrajectoryPlanner_.getLinearPositionConstraint(time);
+}
+
 }  // namespace legged_robot
 }  // namespace ocs2

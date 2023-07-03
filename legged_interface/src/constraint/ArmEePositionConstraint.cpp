@@ -1,8 +1,7 @@
 #include "constraint/ArmEePositionConstraint.h"
-
 #include <ocs2_core/misc/LinearInterpolation.h>
-
 #include "ocs2_legged_robot/LeggedRobotPreComputation.h"
+
 
 namespace ocs2 {
 namespace legged_robot {
@@ -11,7 +10,7 @@ namespace legged_robot {
 /******************************************************************************************************/
 /******************************************************************************************************/
 ArmEePositionConstraint::ArmEePositionConstraint(const EndEffectorKinematics<scalar_t>& endEffectorKinematics,
-                                                   const ReferenceManager& referenceManager)
+                                                   const LionArmedReferenceManager& referenceManager)
     : StateConstraint(ConstraintOrder::Linear),
       endEffectorKinematicsPtr_(endEffectorKinematics.clone()),
       referenceManagerPtr_(&referenceManager) {
@@ -31,8 +30,7 @@ size_t ArmEePositionConstraint::getNumConstraints(scalar_t time) const { return 
 /******************************************************************************************************/
 vector_t ArmEePositionConstraint::getValue(scalar_t time, const vector_t& state,
                                             const PreComputation& preComputation) const {
-  // // print entering
-  // std::cerr << "Entering ArmEndEffectorConstraint getValue" << std::endl;
+
   // PinocchioEndEffectorKinematics requires pre-computation with shared PinocchioInterface.
   if (pinocchioEEKinPtr_ != nullptr) {
     const auto& preCompMM = cast<legged_robot::LeggedRobotPreComputation>(preComputation);
@@ -40,10 +38,13 @@ vector_t ArmEePositionConstraint::getValue(scalar_t time, const vector_t& state,
   }
 
   // const auto desiredPositionOrientation = interpolateEndEffectorPose(time);
-  vector_t position(3);
+
+  // vector_t position(3);
+  vector3_t pos2 = referenceManagerPtr_->getReferencePosition(time);
+  // std::cerr<<pos2.transpose()<<std::endl;
   quaternion_t orientation(Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitZ()));
-  position << 0.5, 0.0, 0.6;
-  const auto desiredPositionOrientation = std::make_pair(position, orientation);
+  // position << 0.5, 0.0, 0.6;
+  const auto desiredPositionOrientation = std::make_pair(pos2, orientation);
 
   vector_t constraint(6);
   constraint.head<3>() = endEffectorKinematicsPtr_->getPosition(state).front() - desiredPositionOrientation.first;
@@ -57,19 +58,18 @@ vector_t ArmEePositionConstraint::getValue(scalar_t time, const vector_t& state,
 /******************************************************************************************************/
 VectorFunctionLinearApproximation ArmEePositionConstraint::getLinearApproximation(
     scalar_t time, const vector_t& state, const PreComputation& preComputation) const {
-  // // print entering
-  // std::cerr << "Entering ArmEndEffectorConstraint getLinearApproximation" << std::endl;
-  
+
   // PinocchioEndEffectorKinematics requires pre-computation with shared PinocchioInterface.
   if (pinocchioEEKinPtr_ != nullptr) {
     const auto& preCompMM = cast<legged_robot::LeggedRobotPreComputation>(preComputation);
     pinocchioEEKinPtr_->setPinocchioInterface(preCompMM.getPinocchioInterface());
   }
   // const auto desiredPositionOrientation = interpolateEndEffectorPose(time);
-  vector_t position(3);
+  // vector_t position(3);
+  vector3_t pos2 = referenceManagerPtr_->getReferencePosition(time);
   quaternion_t orientation(Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitZ()));
-  position << 0.4, 0.0, 0.6;
-  const auto desiredPositionOrientation = std::make_pair(position, orientation);
+  // position << 0.4, 0.0, 0.6;
+  const auto desiredPositionOrientation = std::make_pair(pos2, orientation);
   auto approximation = VectorFunctionLinearApproximation(6, state.rows(), 0);
 
   const auto eePosition = endEffectorKinematicsPtr_->getPositionLinearApproximation(state).front();
@@ -81,9 +81,6 @@ VectorFunctionLinearApproximation ArmEePositionConstraint::getLinearApproximatio
           .front();
   approximation.f.tail<3>() = eeOrientationError.f;
   approximation.dfdx.bottomRows<3>() = eeOrientationError.dfdx;
-  // //print approximation
-  // std::cerr<<"approximation"<<std::endl;
-  // std::cout<<approximation<<std::endl;
 
   return approximation;
 }

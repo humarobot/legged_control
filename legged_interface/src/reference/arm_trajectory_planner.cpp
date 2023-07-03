@@ -8,7 +8,7 @@ namespace legged_robot
 ArmTrajectoryPlanner::ArmTrajectoryPlanner(scalar_t time)
 {
   // TODO modify first point
-  path_.push_back(PathPoint(vector3_t{ 0.0, 0.0, 0.0 }, time));
+  path_.push_back(PathPoint(vector3_t{ 0.4, 0.0, 0.5 }, time));
 }
 
 
@@ -67,10 +67,10 @@ vector_t ArmTrajectoryPlanner::getTwistConstraint(scalar_t time) const
 
 vector3_t ArmTrajectoryPlanner::getLinearVelocityConstraint(scalar_t time) const
 {
-  assert(path_.size() > 0);
+  assert(!path_.empty());
   //fing the first point that is after time
   auto it = path_.begin();
-  while (it->T_r < time && it != path_.end())
+  while (it->T_r <= time && it != path_.end())
   {
     it++;
   }  
@@ -83,6 +83,23 @@ vector3_t ArmTrajectoryPlanner::getLinearVelocityConstraint(scalar_t time) const
     return it->s.dots(time)*it->dot_path;
   }
 
+}
+
+vector3_t ArmTrajectoryPlanner::getLinearPositionConstraint(scalar_t time) const{
+  assert(!path_.empty());
+  auto it = path_.begin();
+  while (it->T_r <= time && it != path_.end())
+  {
+    it++;
+  }  
+  if (it == path_.end())
+  {
+    return path_.back().p;
+  }
+  else
+  {
+    return it->s.s(time)*it->dot_path;
+  }
 }
 
 scalar_t ArmTrajectoryPlanner::getPathPointsSize() const{

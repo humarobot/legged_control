@@ -20,6 +20,7 @@ class LionArmedReferenceManager : public SwitchedModelReferenceManager {
   LionArmedReferenceManager(std::shared_ptr<GaitSchedule> gaitSchedulePtr, std::shared_ptr<SwingTrajectoryPlanner> swingTrajectoryPtr);
 
   ~LionArmedReferenceManager() override = default;
+  vector3_t getReferencePosition(scalar_t time) const;
 
  private:
   void modifyReferences(scalar_t initTime, scalar_t finalTime, const vector_t& initState, TargetTrajectories& targetTrajectories,
@@ -27,7 +28,7 @@ class LionArmedReferenceManager : public SwitchedModelReferenceManager {
 
   std::shared_ptr<GaitSchedule> gaitSchedulePtr_;
   std::shared_ptr<SwingTrajectoryPlanner> swingTrajectoryPtr_;
-  std::shared_ptr<ArmTrajectoryPlanner> armTrajectoryPtr_;
+  ArmTrajectoryPlanner armTrajectoryPlanner_{0.0};
 };
 
 }  // namespace legged_robot

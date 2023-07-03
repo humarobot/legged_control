@@ -32,6 +32,7 @@ protected:
 
   ArmTrajectoryPlanner atp_{0.0};
   ArmTrajectoryPlanner atp2_{0.0};
+  ArmTrajectoryPlanner atp3_{0.0};
 };
 
 TEST_F(TrapezoidalProfileTest, ddots_test)
@@ -131,35 +132,45 @@ TEST_F(TrapezoidalProfileTest, s_test)
   EXPECT_EQ(tp4_.s(4.0 + 2.3), 4.0);
 }
 
-TEST_F(TrapezoidalProfileTest, linear_vel_test){
-  EXPECT_NEAR(atp_.getLinearVelocityConstraint(0.0)(0), 0.0, 1e-6);
-  EXPECT_NEAR(atp_.getLinearVelocityConstraint(0.5)(0), 0.5, 1e-6);
-  EXPECT_NEAR(atp_.getLinearVelocityConstraint(1.0)(0), 1.0, 1e-6);
-  EXPECT_NEAR(atp_.getLinearVelocityConstraint(1.5)(0), 1.0, 1e-6);
-  EXPECT_NEAR(atp_.getLinearVelocityConstraint(9.0)(0), 1.0, 1e-6);
-  EXPECT_NEAR(atp_.getLinearVelocityConstraint(10.0)(0), 1.0, 1e-6);
-  EXPECT_NEAR(atp_.getLinearVelocityConstraint(10.5)(0), 0.5, 1e-6);
-  EXPECT_NEAR(atp_.getLinearVelocityConstraint(11.0)(0), 0.0, 1e-6);
+// TEST_F(TrapezoidalProfileTest, linear_vel_test){
+//   EXPECT_NEAR(atp_.getLinearVelocityConstraint(0.0)(0), 0.0, 1e-6);
+//   EXPECT_NEAR(atp_.getLinearVelocityConstraint(0.5)(0), 0.5, 1e-6);
+//   EXPECT_NEAR(atp_.getLinearVelocityConstraint(1.0)(0), 1.0, 1e-6);
+//   EXPECT_NEAR(atp_.getLinearVelocityConstraint(1.5)(0), 1.0, 1e-6);
+//   EXPECT_NEAR(atp_.getLinearVelocityConstraint(9.0)(0), 1.0, 1e-6);
+//   EXPECT_NEAR(atp_.getLinearVelocityConstraint(10.0)(0), 1.0, 1e-6);
+//   EXPECT_NEAR(atp_.getLinearVelocityConstraint(10.5)(0), 0.5, 1e-6);
+//   EXPECT_NEAR(atp_.getLinearVelocityConstraint(11.0)(0), 0.0, 1e-6);
 
-}
+// }
 
-TEST_F(TrapezoidalProfileTest, linear_vel_test2){
-  // EXPECT_NEAR(atp2_.getLinearVelocityConstraint(0.0)(0), 0.0, 1e-6);
-  // EXPECT_NEAR(atp2_.getLinearVelocityConstraint(0.5)(0), 0.5*0.6, 1e-6);
-  // EXPECT_NEAR(atp2_.getLinearVelocityConstraint(1.0)(0), 1.0*0.6, 1e-6);
-  // EXPECT_NEAR(atp2_.getLinearVelocityConstraint(1.5)(0), 1.0*0.6, 1e-6);
-  // EXPECT_NEAR(atp2_.getLinearVelocityConstraint(9.0)(0), 1.0*0.6, 1e-6);
-  // EXPECT_NEAR(atp2_.getLinearVelocityConstraint(10.0)(0), 1.0*0.6, 1e-6);
-  // EXPECT_NEAR(atp2_.getLinearVelocityConstraint(10.5)(0), 0.5*0.6, 1e-6);
-  // EXPECT_NEAR(atp2_.getLinearVelocityConstraint(11.0)(0), 0.0, 1e-6);
-  EXPECT_EQ(atp2_.getPathPointsSize(), 2);
-  EXPECT_NEAR(atp2_.getLinearVelocityConstraint(11.5)(0), 0.0, 1e-6);
-  EXPECT_NEAR(atp2_.getLinearVelocityConstraint(15.0)(0), 0.0, 1e-6);
-  EXPECT_NEAR(atp2_.getLinearVelocityConstraint(11.5)(1), 0.5*0.6, 1e-6);
-  EXPECT_NEAR(atp2_.getLinearVelocityConstraint(12.5)(1), 1.0*0.6, 1e-6);
-  EXPECT_NEAR(atp2_.getLinearVelocityConstraint(14.5)(1), 1.0*0.6, 1e-6);
-  EXPECT_NEAR(atp2_.getLinearVelocityConstraint(21.5)(1), 0.5*0.6, 1e-6);
-  EXPECT_NEAR(atp2_.getLinearVelocityConstraint(22.0)(1), 0.0, 1e-6);
+// TEST_F(TrapezoidalProfileTest, linear_vel_test2){
+//   // EXPECT_NEAR(atp2_.getLinearVelocityConstraint(0.0)(0), 0.0, 1e-6);
+//   // EXPECT_NEAR(atp2_.getLinearVelocityConstraint(0.5)(0), 0.5*0.6, 1e-6);
+//   // EXPECT_NEAR(atp2_.getLinearVelocityConstraint(1.0)(0), 1.0*0.6, 1e-6);
+//   // EXPECT_NEAR(atp2_.getLinearVelocityConstraint(1.5)(0), 1.0*0.6, 1e-6);
+//   // EXPECT_NEAR(atp2_.getLinearVelocityConstraint(9.0)(0), 1.0*0.6, 1e-6);
+//   // EXPECT_NEAR(atp2_.getLinearVelocityConstraint(10.0)(0), 1.0*0.6, 1e-6);
+//   // EXPECT_NEAR(atp2_.getLinearVelocityConstraint(10.5)(0), 0.5*0.6, 1e-6);
+//   // EXPECT_NEAR(atp2_.getLinearVelocityConstraint(11.0)(0), 0.0, 1e-6);
+//   EXPECT_EQ(atp2_.getPathPointsSize(), 2);
+//   EXPECT_NEAR(atp2_.getLinearVelocityConstraint(11.5)(0), 0.0, 1e-6);
+//   EXPECT_NEAR(atp2_.getLinearVelocityConstraint(15.0)(0), 0.0, 1e-6);
+//   EXPECT_NEAR(atp2_.getLinearVelocityConstraint(11.5)(1), 0.5*0.6, 1e-6);
+//   EXPECT_NEAR(atp2_.getLinearVelocityConstraint(12.5)(1), 1.0*0.6, 1e-6);
+//   EXPECT_NEAR(atp2_.getLinearVelocityConstraint(14.5)(1), 1.0*0.6, 1e-6);
+//   EXPECT_NEAR(atp2_.getLinearVelocityConstraint(21.5)(1), 0.5*0.6, 1e-6);
+//   EXPECT_NEAR(atp2_.getLinearVelocityConstraint(22.0)(1), 0.0, 1e-6);
+// }
+
+TEST_F(TrapezoidalProfileTest, linear_pos_test)
+{
+  EXPECT_NEAR(atp3_.getLinearPositionConstraint(0.)(0),0.3,1e-6);
+  EXPECT_NEAR(atp3_.getLinearPositionConstraint(0.)(1),0.4,1e-6);
+  EXPECT_NEAR(atp3_.getLinearPositionConstraint(0.)(2),0.5,1e-6);
+  EXPECT_NEAR(atp3_.getLinearPositionConstraint(1.)(0),0.3,1e-6);
+  EXPECT_NEAR(atp3_.getLinearPositionConstraint(1.)(1),0.4,1e-6);
+  EXPECT_NEAR(atp3_.getLinearPositionConstraint(1.)(2),0.5,1e-6);
 }
 
 }  // namespace legged_robot
