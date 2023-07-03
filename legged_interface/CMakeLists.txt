@@ -47,6 +47,7 @@ add_library(${PROJECT_NAME}
         src/legged_interface.cpp
         src/reference/arm_trajectory_planner.cpp
         src/reference/lion_armed_reference_manager.cpp
+        src/constraint/ArmEePositionConstraint.cpp
         )
 
 target_link_libraries(${PROJECT_NAME}

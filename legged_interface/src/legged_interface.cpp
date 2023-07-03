@@ -28,9 +28,8 @@
 #include <ocs2_legged_robot/constraint/ZeroWrenchConstraint.h>
 #include <ocs2_legged_robot/constraint/FixPositionConstraint.h>
 #include <ocs2_legged_robot/constraint/ZeroVelocityConstraintCppAd.h>
-#include <ocs2_legged_robot/constraint/ArmEndEffectorConstraint.h>
+#include "constraint/ArmEePositionConstraint.h"
 #include <ocs2_legged_robot/constraint/BaseConstraint.h>
-// #include "ocs2_legged_robot/constraint/FootsTrackConstraint.h"
 #include <ocs2_legged_robot/cost/LeggedRobotQuadraticTrackingCost.h>
 #include <ocs2_legged_robot/dynamics/LeggedRobotDynamicsAD.h>
 #include <ocs2_legged_robot/initialization/LeggedRobotInitializer.h>
@@ -422,7 +421,7 @@ LeggedInterface::getArmEndEffectorConstraint(const EndEffectorKinematics<scalar_
   }
 
   std::unique_ptr<StateConstraint> constraint;
-  constraint.reset(new ArmEndEffectorConstraint(eeKinematics, *referenceManagerPtr_));
+  constraint.reset(new ArmEePositionConstraint(eeKinematics, *referenceManagerPtr_));
   std::vector<std::unique_ptr<PenaltyBase>> penaltyArray(6);
   std::generate_n(penaltyArray.begin(), 3,
                   [&] { return std::unique_ptr<PenaltyBase>(new QuadraticPenalty(muPosition)); });
