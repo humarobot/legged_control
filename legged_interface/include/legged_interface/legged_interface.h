@@ -77,6 +77,10 @@ public:
   {
     return referenceManagerPtr_;
   }
+  std::shared_ptr<LionArmedReferenceManager> getLionArmedReferenceManagerPtr() const
+  {
+    return referenceManagerPtr_;
+  }
   const Initializer& getInitializer() const override
   {
     return *initializerPtr_;

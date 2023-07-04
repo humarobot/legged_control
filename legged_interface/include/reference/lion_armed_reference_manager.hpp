@@ -8,6 +8,8 @@
 #include "ocs2_legged_robot/gait/GaitSchedule.h"
 #include "ocs2_legged_robot/gait/MotionPhaseDefinition.h"
 #include "arm_trajectory_planner.hpp"
+#include "ros/ros.h"
+#include "geometry_msgs/Point.h"
 
 namespace ocs2 {
 namespace legged_robot {
@@ -22,13 +24,17 @@ class LionArmedReferenceManager : public SwitchedModelReferenceManager {
   ~LionArmedReferenceManager() override = default;
   vector3_t getReferencePosition(scalar_t time) const;
 
+  void subscribe(ros::NodeHandle& nodeHandle);
  private:
   void modifyReferences(scalar_t initTime, scalar_t finalTime, const vector_t& initState, TargetTrajectories& targetTrajectories,
                         ModeSchedule& modeSchedule) override;
 
+  vector3_t new_point_{0.4,0.0,0.5};
   std::shared_ptr<GaitSchedule> gaitSchedulePtr_;
   std::shared_ptr<SwingTrajectoryPlanner> swingTrajectoryPtr_;
   ArmTrajectoryPlanner armTrajectoryPlanner_{0.0};
+
+  ::ros::Subscriber pointSubscriber_;
 };
 
 }  // namespace legged_robot

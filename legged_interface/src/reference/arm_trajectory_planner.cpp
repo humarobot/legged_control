@@ -19,7 +19,7 @@ int ArmTrajectoryPlanner::update(const vector3_t& new_pos, const scalar_t& v_m, 
   {
     path_.front().T_r = time;
   }
-  else if (first_point.T_r < time && path_.size() > 1)
+  else if (path_.back().T_r < time && path_.size() > 1)
   {
     path_.pop_front();
   }
@@ -98,7 +98,7 @@ vector3_t ArmTrajectoryPlanner::getLinearPositionConstraint(scalar_t time) const
   }
   else
   {
-    return it->s.s(time)*it->dot_path;
+    return (it->s.s(time)-1)*it->dot_path+it->p;
   }
 }
 
