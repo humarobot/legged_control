@@ -29,7 +29,7 @@ class LionArmedReferenceManager : public SwitchedModelReferenceManager {
   void modifyReferences(scalar_t initTime, scalar_t finalTime, const vector_t& initState, TargetTrajectories& targetTrajectories,
                         ModeSchedule& modeSchedule) override;
 
-  vector3_t new_point_{0.4,0.0,0.5};
+  vector3_t new_point_{0.3,0.0,0.4};
   std::shared_ptr<GaitSchedule> gaitSchedulePtr_;
   std::shared_ptr<SwingTrajectoryPlanner> swingTrajectoryPtr_;
   ArmTrajectoryPlanner armTrajectoryPlanner_{0.0};
