@@ -598,12 +598,10 @@
       </material>
     </visual>
     <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
+      <origin rpy="0 0 0" xyz="0 0.0 0.03" />
       <geometry>
-        <mesh
-          filename="package://lion_arx_description/meshes/arm_base_link.STL" />
+        <!-- <box size="0.05 0.03 0.3"/> -->
+        <cylinder length="0.05" radius="0.03" />
       </geometry>
     </collision>
   </link>
@@ -650,8 +648,7 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://lion_arx_description/meshes/link1.STL" />
+        <cylinder length="0.01" radius="0.03" />
       </geometry>
     </collision>
   </link>
@@ -703,12 +700,10 @@
       </material>
     </visual>
     <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
+      <origin rpy="0 ${pi/2.0} 0" xyz="-0.14 0.0 0.0" />
       <geometry>
-        <mesh
-          filename="package://lion_arx_description/meshes/link2.STL" />
+        <!-- <box size="0.05 0.03 0.3"/> -->
+        <cylinder length="0.28" radius="0.025" />
       </geometry>
     </collision>
   </link>
@@ -760,12 +755,10 @@
       </material>
     </visual>
     <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
+      <origin rpy="0 ${pi/2.0} 0" xyz="0.15 0.0 -0.055" />
       <geometry>
-        <mesh
-          filename="package://lion_arx_description/meshes/link3.STL" />
+        <!-- <box size="0.05 0.03 0.3"/> -->
+        <cylinder length="0.2" radius="0.02" />
       </geometry>
     </collision>
   </link>
@@ -817,12 +810,10 @@
       </material>
     </visual>
     <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
+      <origin rpy="${pi/2.0} 0 0" xyz="0.06 0.0 -0.0" />
       <geometry>
-        <mesh
-          filename="package://lion_arx_description/meshes/link4.STL" />
+        <!-- <box size="0.05 0.03 0.3"/> -->
+        <cylinder length="0.06" radius="0.025" />
       </geometry>
     </collision>
   </link>
@@ -874,12 +865,10 @@
       </material>
     </visual>
     <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
+      <origin rpy="0 ${pi/2.0} 0" xyz="0.06 0.0 -0.0" />
       <geometry>
-        <mesh
-          filename="package://lion_arx_description/meshes/link5.STL" />
+        <!-- <box size="0.05 0.03 0.3"/> -->
+        <cylinder length="0.06" radius="0.025" />
       </geometry>
     </collision>
   </link>
