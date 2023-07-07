@@ -36,15 +36,11 @@ vector_t ArmEePositionConstraint::getValue(scalar_t time, const vector_t& state,
     const auto& preCompMM = cast<legged_robot::LeggedRobotPreComputation>(preComputation);
     pinocchioEEKinPtr_->setPinocchioInterface(preCompMM.getPinocchioInterface());
   }
-
-  // const auto desiredPositionOrientation = interpolateEndEffectorPose(time);
-
-  // vector_t position(3);
-  vector3_t pos2 = referenceManagerPtr_->getReferencePosition(time);
-  // std::cerr<<pos2.transpose()<<std::endl;
+  vector3_t base_pos = state.segment<3>(6);
+  vector3_t relative_pos = referenceManagerPtr_->getReferencePosition(time);
+  vector3_t pos = base_pos + relative_pos;
   quaternion_t orientation(Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitZ()));
-  // position << 0.5, 0.0, 0.6;
-  const auto desiredPositionOrientation = std::make_pair(pos2, orientation);
+  const auto desiredPositionOrientation = std::make_pair(pos, orientation);
 
   vector_t constraint(6);
   constraint.head<3>() = endEffectorKinematicsPtr_->getPosition(state).front() - desiredPositionOrientation.first;
@@ -64,12 +60,11 @@ VectorFunctionLinearApproximation ArmEePositionConstraint::getLinearApproximatio
     const auto& preCompMM = cast<legged_robot::LeggedRobotPreComputation>(preComputation);
     pinocchioEEKinPtr_->setPinocchioInterface(preCompMM.getPinocchioInterface());
   }
-  // const auto desiredPositionOrientation = interpolateEndEffectorPose(time);
-  // vector_t position(3);
-  vector3_t pos2 = referenceManagerPtr_->getReferencePosition(time);
+  vector3_t base_pos = state.segment<3>(6);
+  vector3_t relative_pos = referenceManagerPtr_->getReferencePosition(time);
+  vector3_t pos = base_pos + relative_pos;
   quaternion_t orientation(Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitZ()));
-  // position << 0.4, 0.0, 0.6;
-  const auto desiredPositionOrientation = std::make_pair(pos2, orientation);
+  const auto desiredPositionOrientation = std::make_pair(pos, orientation);
   auto approximation = VectorFunctionLinearApproximation(6, state.rows(), 0);
 
   const auto eePosition = endEffectorKinematicsPtr_->getPositionLinearApproximation(state).front();
