@@ -10,6 +10,7 @@
 #include "arm_trajectory_planner.hpp"
 #include "ros/ros.h"
 #include "geometry_msgs/Point.h"
+#include "geometry_msgs/PoseStamped.h"
 
 namespace ocs2 {
 namespace legged_robot {
@@ -23,18 +24,23 @@ class LionArmedReferenceManager : public SwitchedModelReferenceManager {
 
   ~LionArmedReferenceManager() override = default;
   vector3_t getReferencePosition(scalar_t time) const;
+  quaternion_t getReferenceOrientation(scalar_t time) const;
 
   void subscribe(ros::NodeHandle& nodeHandle);
+  vector3_t getBaseGoalPos() const { return base_goal_pos_; }
+  quaternion_t getBaseGoalOrientation() const { return base_goal_orientation_; }
  private:
   void modifyReferences(scalar_t initTime, scalar_t finalTime, const vector_t& initState, TargetTrajectories& targetTrajectories,
                         ModeSchedule& modeSchedule) override;
 
-  vector3_t new_point_{0.4,0.0,0.2};
+  vector3_t new_point_;
+  vector3_t base_goal_pos_;
+  quaternion_t base_goal_orientation_{1.0,0.0,0.0,0.0};
   std::shared_ptr<GaitSchedule> gaitSchedulePtr_;
   std::shared_ptr<SwingTrajectoryPlanner> swingTrajectoryPtr_;
   ArmTrajectoryPlanner armTrajectoryPlanner_{0.0};
 
-  ::ros::Subscriber pointSubscriber_;
+  ::ros::Subscriber pointSubscriber_,baseGoalSubscriber_;
 };
 
 }  // namespace legged_robot

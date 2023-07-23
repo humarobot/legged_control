@@ -774,7 +774,7 @@
     <axis
       xyz="0 1 0" />
     <limit
-      lower="0."
+      lower="0.05"
       upper="3.14"
       effort="25."
       velocity="10." />

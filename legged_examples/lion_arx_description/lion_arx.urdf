@@ -795,7 +795,7 @@
     <parent link="upper_arm_link"/>
     <child link="elbow_link"/>
     <axis xyz="0 1 0"/>
-    <limit effort="25." lower="0." upper="3.14" velocity="10."/>
+    <limit effort="25." lower="0.05" upper="3.14" velocity="10."/>
     <dynamics damping="0.1" friction="0.01"/>
   </joint>
   <link name="lower_arm_link">
@@ -1098,4 +1098,3 @@
     </actuator>
   </transmission>
 </robot>
-

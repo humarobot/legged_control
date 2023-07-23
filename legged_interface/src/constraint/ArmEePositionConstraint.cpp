@@ -37,10 +37,15 @@ vector_t ArmEePositionConstraint::getValue(scalar_t time, const vector_t& state,
     pinocchioEEKinPtr_->setPinocchioInterface(preCompMM.getPinocchioInterface());
   }
   vector3_t base_pos = state.segment<3>(6);
+  vector3_t base_euler = state.segment<3>(9);
+  quaternion_t base_quat = quaternion_t(Eigen::AngleAxisd(base_euler[2], Eigen::Vector3d::UnitX()) *
+                                        Eigen::AngleAxisd(base_euler[1], Eigen::Vector3d::UnitY()) *
+                                        Eigen::AngleAxisd(base_euler[0], Eigen::Vector3d::UnitZ()));
+  // std::cerr<<base_quat.coeffs().transpose()<<std::endl;
   vector3_t relative_pos = referenceManagerPtr_->getReferencePosition(time);
-  vector3_t pos = base_pos + relative_pos;
-  quaternion_t orientation(Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitZ()));
-  const auto desiredPositionOrientation = std::make_pair(pos, orientation);
+  // quaternion_t orientation = referenceManagerPtr_->getReferenceOrientation(time);
+  vector3_t pos = base_pos + base_quat * relative_pos;
+  const auto desiredPositionOrientation = std::make_pair(pos, base_quat);
 
   vector_t constraint(6);
   constraint.head<3>() = endEffectorKinematicsPtr_->getPosition(state).front() - desiredPositionOrientation.first;
@@ -61,10 +66,16 @@ VectorFunctionLinearApproximation ArmEePositionConstraint::getLinearApproximatio
     pinocchioEEKinPtr_->setPinocchioInterface(preCompMM.getPinocchioInterface());
   }
   vector3_t base_pos = state.segment<3>(6);
+  vector3_t base_euler = state.segment<3>(9);
+  quaternion_t base_quat = quaternion_t(Eigen::AngleAxisd(base_euler[2], Eigen::Vector3d::UnitX()) *
+                                        Eigen::AngleAxisd(base_euler[1], Eigen::Vector3d::UnitY()) *
+                                        Eigen::AngleAxisd(base_euler[0], Eigen::Vector3d::UnitZ()));
+  // std::cerr<<base_quat.coeffs().transpose()<<std::endl;
   vector3_t relative_pos = referenceManagerPtr_->getReferencePosition(time);
-  vector3_t pos = base_pos + relative_pos;
-  quaternion_t orientation(Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitZ()));
-  const auto desiredPositionOrientation = std::make_pair(pos, orientation);
+  // quaternion_t orientation = referenceManagerPtr_->getReferenceOrientation(time);
+  vector3_t pos = base_pos + base_quat * relative_pos;
+  const auto desiredPositionOrientation = std::make_pair(pos, base_quat);
+  
   auto approximation = VectorFunctionLinearApproximation(6, state.rows(), 0);
 
   const auto eePosition = endEffectorKinematicsPtr_->getPositionLinearApproximation(state).front();

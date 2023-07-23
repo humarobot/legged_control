@@ -275,11 +275,11 @@ vector_t WbcBase::computeHierarchicalTask(const vector_t& inputDesired,scalar_t 
   Task task2 = formulateArmJointNomalTrackingTask(300, 10);
   Task task3 = formulateSwingLegTask() + formulateFootContactForceTask(inputDesired) +
                formulateEndEffectorImpedenceTask(0, 0, 0);
-  if(time>3){
-    task2 = formulateArmJointNomalTrackingTask(10,0);
-    task3 = formulateSwingLegTask() + formulateFootContactForceTask(inputDesired) +
-    formulateEndEffectorImpedenceTask(0.,500,0);
-  }
+  // if(time>3){
+  //   task2 = formulateArmJointNomalTrackingTask(10,0);
+  //   task3 = formulateSwingLegTask() + formulateFootContactForceTask(inputDesired) +
+  //   formulateEndEffectorImpedenceTask(0.,500,0);
+  // }
 
   Task task4 = formulateBaseHeightMotionTask() + formulateBaseAngularMotionTask();
 
