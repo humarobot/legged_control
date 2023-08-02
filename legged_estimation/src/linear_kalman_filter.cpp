@@ -156,7 +156,7 @@ vector_t KalmanFilterEstimate::update(const ros::Time& time, const ros::Duration
     vs_.segment(3 * i, 3) = -1. * ee_vel[i];
   }
   // std::cout<<std::endl;
-  Eigen::Matrix<scalar_t, 3, 1> g(0, 0, -9.81);
+  Eigen::Matrix<scalar_t, 3, 1> g(0, 0, 9.81);
   Eigen::Matrix<scalar_t, 3, 1> imu_accel(imu_sensor_handle_.getLinearAcceleration()[0],
                                           imu_sensor_handle_.getLinearAcceleration()[1],
                                           imu_sensor_handle_.getLinearAcceleration()[2]);
