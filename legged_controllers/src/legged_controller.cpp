@@ -197,9 +197,8 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
   }
 
   //PID controller
-  for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum-6; ++j){
-    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 10, 0.5, torque(j));
-  }
+  for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j){
+    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 20, 2.5, 0.25*torque(j));
 
   for (size_t j = legged_interface_->getCentroidalModelInfo().actuatedDofNum-6; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j){
     hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 0.0, 0.0,torque(j));
