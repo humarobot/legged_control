@@ -35,7 +35,7 @@
 #define Kp_MAX 500
 #define Kd_MIN 0
 #define Kd_MAX 5
-#define PI 3.1415927
+
 
 /** 
  * 调试问题记录：
@@ -94,7 +94,7 @@ private:
 
 
     double _motors_direction[12]={-1,1,1,-1,-1,-1,1,1,1,1,-1,-1};
-    double _motors_offset[12]={0,0,PI,0,0,PI,0,0,PI,0,0,PI};
+    double _motors_offset[12]={0,0,3.1415927,0,0,3.1415927,0,0,3.1415927,0,0,3.1415927};
     double _init_joints_pos[12]={0.4,0.0,-3.14,-0.4,0.0,-3.14,0.4,0.0,-3.14,-0.4,0.0,-3.14};
     int _index=0;
     int _frame_num[12]={0};

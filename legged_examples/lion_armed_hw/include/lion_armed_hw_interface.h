@@ -60,9 +60,6 @@ private:
 
   bool setupContactSensor(ros::NodeHandle& nh);
 
-  void enableArmMotors();
-
-  static void processSignal(int sign);
 
   //   std::shared_ptr<UNITREE_LEGGED_SDK::UDP> udp_;
   //   std::shared_ptr<UNITREE_LEGGED_SDK::Safety> safety_;

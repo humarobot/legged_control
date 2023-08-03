@@ -11,6 +11,7 @@ find_package(catkin REQUIRED
     COMPONENTS
     roscpp
     legged_hw    
+    arm_control
 )
 catkin_package(
         INCLUDE_DIRS

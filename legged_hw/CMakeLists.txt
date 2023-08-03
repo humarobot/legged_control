@@ -15,6 +15,7 @@ find_package(catkin REQUIRED
         legged_common
         controller_manager
         urdf
+        arm_control
         )
 
 catkin_package(

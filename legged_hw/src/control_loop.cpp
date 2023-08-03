@@ -47,11 +47,26 @@ LeggedHWLoop::LeggedHWLoop(ros::NodeHandle& nh, std::shared_ptr<LeggedHW> hardwa
       if (can_running_)
       {
         can_driver_.Update();
+        // arm_driver_.set_zero_torque();
       }
     }
   });
   sched_param sched2{ .sched_priority = thread_priority };
   if (pthread_setschedparam(can_thread_.native_handle(), SCHED_FIFO, &sched2) != 0)
+    ROS_WARN("Failed to set threads priority (one possible reason could be that the user and the group permissions "
+             "are not set properly.).\n");
+
+  arm_thread_ = std::thread([&]() {
+    while (arm_running_)
+    {
+      if (arm_running_)
+      {
+        arm_driver_.CAN_Handlej.can2_adapter.socketcan_receiver_thread();
+      }
+    }
+  });
+  sched_param sched3{ .sched_priority = thread_priority };
+  if (pthread_setschedparam(arm_thread_.native_handle(), SCHED_FIFO, &sched3) != 0)
     ROS_WARN("Failed to set threads priority (one possible reason could be that the user and the group permissions "
              "are not set properly.).\n");
 }
@@ -97,10 +112,13 @@ LeggedHWLoop::~LeggedHWLoop()
   std::cout << "!!!!!!!!!!!!!!!!!!!!!!!destruct leggedHWLoop" << std::endl;
   loop_running_ = false;
   can_running_ = false;
+  arm_running_ = false;
   if (loop_thread_.joinable())
     loop_thread_.join();
   if (can_thread_.joinable())
     can_thread_.join();
+  if (arm_thread_.joinable())
+    arm_thread_.join();
 }
 
 }  // namespace legged
