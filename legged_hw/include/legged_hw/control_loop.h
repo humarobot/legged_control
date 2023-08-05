@@ -41,7 +41,7 @@
 #include <ros/ros.h>
 #include <controller_manager/controller_manager.h>
 #include "legged_hw/CubeMarsDriver.h"
-#include "App/arm_control.h"
+#include "legged_hw/ArxMotorDriver.h"
 
 namespace legged
 {
@@ -95,6 +95,6 @@ private:
   // Abstract Hardware Interface for your robot
   std::shared_ptr<LeggedHW> hardware_interface_;
   CubeMarsDriver can_driver_{hardware_interface_->joint_data_,loop_hz_};
-  arx_arm arm_driver_;
+  ArxMotorDriver arm_driver_{hardware_interface_->joint_data_,loop_hz_};
 };
 }  // namespace legged

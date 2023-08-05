@@ -47,7 +47,6 @@ LeggedHWLoop::LeggedHWLoop(ros::NodeHandle& nh, std::shared_ptr<LeggedHW> hardwa
       if (can_running_)
       {
         can_driver_.Update();
-        // arm_driver_.set_zero_torque();
       }
     }
   });
@@ -56,12 +55,13 @@ LeggedHWLoop::LeggedHWLoop(ros::NodeHandle& nh, std::shared_ptr<LeggedHW> hardwa
     ROS_WARN("Failed to set threads priority (one possible reason could be that the user and the group permissions "
              "are not set properly.).\n");
 
+  arm_driver_.Init();
   arm_thread_ = std::thread([&]() {
     while (arm_running_)
     {
       if (arm_running_)
       {
-        arm_driver_.CAN_Handlej.can2_adapter.socketcan_receiver_thread();
+        arm_driver_.Update();
       }
     }
   });
