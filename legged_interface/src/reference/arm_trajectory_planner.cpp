@@ -8,7 +8,7 @@ namespace legged_robot
 ArmTrajectoryPlanner::ArmTrajectoryPlanner(scalar_t time)
 {
   // TODO modify first point
-  path_.push_back(PathPoint(vector3_t{ 0.4, 0.0, 0.2 }, time));
+  path_.push_back(PathPoint(vector3_t{ 0.25, 0.0, 0.25 }, time));
 }
 
 
