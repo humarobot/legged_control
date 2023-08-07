@@ -16,7 +16,7 @@
 
   <!-- push robot_description to factory and spawn robot in gazebo -->
   <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" clear_params="true"
-    args="-z 0.6 -param legged_robot_description -urdf -model lion_arx" output="screen" />
+    args="-z 0.6 -param legged_robot_description -urdf -model lion_arx3" output="screen" />
   <node name="rqt_controller_manager" pkg="rqt_controller_manager"
     type="rqt_controller_manager"/>
   <arg name="node_start_delay" default="3.5" />

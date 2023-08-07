@@ -14,7 +14,7 @@ LionArmedReferenceManager::LionArmedReferenceManager(std::shared_ptr<GaitSchedul
   : SwitchedModelReferenceManager(gaitSchedulePtr, swingTrajectoryPtr)
   , gaitSchedulePtr_(gaitSchedulePtr)
   , swingTrajectoryPtr_(swingTrajectoryPtr)
-  , new_point_(0.25,0.0,0.25)
+  , new_point_(0.1,0.0,0.3)
 {
 }
 

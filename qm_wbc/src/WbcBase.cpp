@@ -172,9 +172,9 @@ vector_t WbcBase::update(const ocs2::vector_t& stateDesired, const ocs2::vector_
   //   formulateEndEffectorImpedenceTask(0.,1000,0);
   // }
 
-  Task task4 = formulateBaseHeightMotionTask() + formulateBaseAngularMotionTask()+formulateArmJointNomalTrackingTask(300, 10);
-
-  HoQp hoQp(task4, std::make_shared<HoQp>(task3, std::make_shared<HoQp>(task1)));
+  Task task4 = formulateBaseHeightMotionTask() + formulateBaseAngularMotionTask();
+  // HoQp hoQp(task0);
+  HoQp hoQp(task4, std::make_shared<HoQp>(task3, std::make_shared<HoQp>(task2, std::make_shared<HoQp>(task1))));
   vector_t x_optimal = hoQp.getSolutions();
   return WbcBase::updateCmd(x_optimal);
 }
@@ -234,7 +234,7 @@ void WbcBase::updateMeasured(const ocs2::vector_t& rbdStateMeasured, ocs2::scala
 
   // For floating base EoM task
   pinocchio::nonLinearEffects(model, data, qMeasured_, vMeasured_);
-  j_ = matrix_t(3 * info_.numThreeDofContacts + 6, info_.generalizedCoordinatesNum);
+  j_ = matrix_t(3 * info_.numThreeDofContacts + 3, info_.generalizedCoordinatesNum);
   j_.setZero();
   for (size_t i = 0; i < info_.numThreeDofContacts; ++i)
   {
@@ -245,12 +245,12 @@ void WbcBase::updateMeasured(const ocs2::vector_t& rbdStateMeasured, ocs2::scala
   }
   Eigen::Matrix<scalar_t, 6, Eigen::Dynamic> jac;
   jac.setZero(6, info_.generalizedCoordinatesNum);
-  pinocchio::getFrameJacobian(model, data, model.getBodyId("hand_link"), pinocchio::LOCAL_WORLD_ALIGNED, jac);
-  j_.block(3 * 4, 0, 6, info_.generalizedCoordinatesNum) = jac.template topRows<6>();
+  pinocchio::getFrameJacobian(model, data, armEeFrameIdx_, pinocchio::LOCAL_WORLD_ALIGNED, jac);
+  j_.block(3 * 4, 0, 3, info_.generalizedCoordinatesNum) = jac.template topRows<3>();
 
   // For not contact motion task
   pinocchio::computeJointJacobiansTimeVariation(model, data, qMeasured_, vMeasured_);
-  dj_ = matrix_t(3 * info_.numThreeDofContacts + 6, info_.generalizedCoordinatesNum);
+  dj_ = matrix_t(3 * info_.numThreeDofContacts + 3, info_.generalizedCoordinatesNum);
   dj_.setZero();
   for (size_t i = 0; i < info_.numThreeDofContacts; ++i)
   {
@@ -262,9 +262,9 @@ void WbcBase::updateMeasured(const ocs2::vector_t& rbdStateMeasured, ocs2::scala
   }
   Eigen::Matrix<scalar_t, 6, Eigen::Dynamic> djac;
   djac.setZero(6, info_.generalizedCoordinatesNum);
-  pinocchio::getFrameJacobianTimeVariation(model, data, model.getBodyId("hand_link"), pinocchio::LOCAL_WORLD_ALIGNED,
+  pinocchio::getFrameJacobianTimeVariation(model, data, armEeFrameIdx_, pinocchio::LOCAL_WORLD_ALIGNED,
                                            djac);
-  dj_.block(3 * 4, 0, 6, info_.generalizedCoordinatesNum) = djac.template topRows<6>();
+  dj_.block(3 * 4, 0, 3, info_.generalizedCoordinatesNum) = djac.template topRows<3>();
 
   // For base motion tracking task
   Eigen::Matrix<scalar_t, 6, Eigen::Dynamic> base_j, base_dj;
@@ -752,9 +752,9 @@ Task WbcBase::formulateEndEffectorImpedenceTask(const scalar_t& M, const scalar_
   // vector3_t error = rotationErrorInWorld<scalar_t>(rotationEeReferenceToWorld, rotationEeMeasuredToWorld);
   // b.tail(3) -= 20.0 * error + 0. * (armDesiredEeAngularVel - armCurrentEeAngularVel);
 
-  vector3_t linear_acc =
-      kp * (posDesired[0] - posMeasured[0]) + kd * (vector3_t::Zero() - velMeasured[0]) + M * eeAccMeasured_;
-  b.head(3) -= linear_acc;
+  // vector3_t linear_acc =
+  //     kp * (posDesired[0] - posMeasured[0]) + kd * (vector3_t::Zero() - velMeasured[0]) + M * eeAccMeasured_;
+  // b.head(3) -= linear_acc;
 
   return { a, b, matrix_t(), vector_t() };
 }

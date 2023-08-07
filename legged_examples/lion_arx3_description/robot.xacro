@@ -668,7 +668,7 @@
       upper="1.57"
       effort="25.0"
       velocity="10.0" />
-    <dynamics damping="0.1" friction="0.01"/>
+    <dynamics damping="0.3" friction="0.1"/>
   </joint>
   <link name="upper_arm_link">
     <inertial>

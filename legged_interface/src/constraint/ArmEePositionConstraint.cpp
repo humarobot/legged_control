@@ -45,10 +45,10 @@ vector_t ArmEePositionConstraint::getValue(scalar_t time, const vector_t& state,
   vector3_t relative_pos = referenceManagerPtr_->getReferencePosition(time);
   // quaternion_t orientation = referenceManagerPtr_->getReferenceOrientation(time);
   vector3_t pos = base_pos + base_quat * relative_pos;
-  const auto desiredPositionOrientation = std::make_pair(pos, base_quat);
+  // const auto desiredPositionOrientation = std::make_pair(pos, base_quat);
 
   vector_t constraint(3);
-  constraint = endEffectorKinematicsPtr_->getPosition(state).front() - desiredPositionOrientation.first;
+  constraint = endEffectorKinematicsPtr_->getPosition(state).front() - pos;
   // constraint.tail<3>() =
   //     endEffectorKinematicsPtr_->getOrientationError(state, {desiredPositionOrientation.second}).front();
   return constraint;
@@ -74,12 +74,12 @@ VectorFunctionLinearApproximation ArmEePositionConstraint::getLinearApproximatio
   vector3_t relative_pos = referenceManagerPtr_->getReferencePosition(time);
   // quaternion_t orientation = referenceManagerPtr_->getReferenceOrientation(time);
   vector3_t pos = base_pos + base_quat * relative_pos;
-  const auto desiredPositionOrientation = std::make_pair(pos, base_quat);
+  // const auto desiredPositionOrientation = std::make_pair(pos, base_quat);
   
   auto approximation = VectorFunctionLinearApproximation(3, state.rows(), 0);
 
   const auto eePosition = endEffectorKinematicsPtr_->getPositionLinearApproximation(state).front();
-  approximation.f.head<3>() = eePosition.f - desiredPositionOrientation.first;
+  approximation.f.head<3>() = eePosition.f - pos;
   approximation.dfdx.topRows<3>() = eePosition.dfdx;
 
   // const auto eeOrientationError =

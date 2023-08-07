@@ -153,18 +153,16 @@ void LeggedInterface::setupOptimalControlProblem(const std::string& taskFile, co
         centroidalModelInfo_.inputDim, velocity_update_callback, hand_name, modelSettings_.modelFolderCppAd,
         modelSettings_.recompileLibrariesCppAd, modelSettings_.verboseCppAd));
     // problemPtr_->stateSoftConstraintPtr->add(hand_name + "_fixPosition", getFixPositionConstraint());
-    // problemPtr_->stateSoftConstraintPtr->add(hand_name + "_armEndEffector",
-    //                                          getArmEndEffectorConstraint(*ee_kinematics_ptr, taskFile, "endEffector",
-    //                                                                      verbose));
-    // problemPtr_->finalSoftConstraintPtr->add(
-    //     "finalEndEffector", getArmEndEffectorConstraint(*ee_kinematics_ptr, taskFile, "finalEndEffector", verbose));
+    problemPtr_->stateSoftConstraintPtr->add(hand_name + "_armEndEffector",
+                                             getArmEndEffectorConstraint(*ee_kinematics_ptr, taskFile, "endEffector",
+                                                                         verbose));
+    problemPtr_->finalSoftConstraintPtr->add(
+        "finalEndEffector", getArmEndEffectorConstraint(*ee_kinematics_ptr, taskFile, "finalEndEffector", verbose));
     // problemPtr_->softConstraintPtr->add("armJointLimits",
                                         // getJointLimitSoftConstraint(*pinocchioInterfacePtr_, taskFile, verbose));
-    problemPtr_->softConstraintPtr->add(hand_name + "_zeroVelocity", getArmZeroVelocityConstraint());
+    // problemPtr_->softConstraintPtr->add(hand_name + "_zeroVelocity", getArmZeroVelocityConstraint());
     // problemPtr_->equalityConstraintPtr->add(hand_name + "_zeroWrench", getZeroWrenchConstraint(i));
   }
-  // // Base constraint term
-  // problemPtr_->stateSoftConstraintPtr->add("baseConstraint", getBaseConstraint());
 
   // Pre-computation
   problemPtr_->preComputationPtr.reset(new LeggedRobotPreComputation(*pinocchioInterfacePtr_, centroidalModelInfo_,
