@@ -145,9 +145,6 @@ initialState
   (24,0)  0.0    ; joint1
   (25,0)  0.0    ; joint2
   (26,0)  0.0    ; joint3
-  (27,0)  0.0    ; joint4
-  (28,0)  0.0    ; joint5
-  (29,0)  0.0    ; joint6
 }
 
 ; standard state weight matrix
@@ -189,9 +186,6 @@ Q
   (24,24) 0.0     ; joint1
   (25,25) 0.0     ; joint2
   (26,26) 0.0     ; joint3
-  (27,27) 0.0     ; joint4
-  (28,28) 0.0     ; joint5
-  (29,29) 0.0     ; joint6
 }
 
 ; control weight matrix
@@ -231,9 +225,6 @@ R
   (24,24) 1000.0
   (25,25) 1000.0
   (26,26) 1000.0
-  (27,27) 1000.0
-  (28,28) 1000.0
-  (29,29) 1000.0
   
 }
 
@@ -303,9 +294,7 @@ jointVelocityLimits
       (0,0)  -15   ; arm_1 [rad/s]
       (1,0)  -15    ; arm_2 [rad/s]
       (2,0)  -15    ; arm_3 [rad/s]
-      (3,0)  -15	   ; arm_4 [rad/s]
-      (4,0)  -15	   ; arm_5 [rad/s]
-      (5,0)  -15	   ; arm_6 [rad/s]
+
     }
   }
 
@@ -317,9 +306,7 @@ jointVelocityLimits
       (0,0)  15    ; arm_1 [rad/s]
       (1,0)  15	   ; arm_2 [rad/s]
       (2,0)  15 	   ; arm_3 [rad/s]
-      (3,0)  15	   ; arm_4 [rad/s]
-      (4,0)  15	   ; arm_5 [rad/s]
-      (5,0)  15	   ; arm_6 [rad/s]
+
     }
   }
 }

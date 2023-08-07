@@ -21,9 +21,6 @@ defaultJointState
    (12,0)  0.0    ; joint1
    (13,0)  0.0    ; joint2
    (14,0)  0.0    ; joint3
-   (15,0)  0.0    ; joint4
-   (16,0)  0.0    ; joint5
-   (17,0)  0.0    ; joint6
 }
 
 initialModeSchedule
