@@ -8,7 +8,7 @@
     <!-- <arg name="urdf_file" default="$(find unitree_description)/urdf/a1.urdf"/> -->
     <!-- <arg name="urdf_file" default="$(find lion_description)/lion.urdf"/> -->
     <!-- <arg name="urdf_file" default="$(find lion_armed_description)/lion_armed.urdf"/> -->
-    <arg name="urdf_file" default="$(find lion_arx_description)/lion_arx.urdf"/>
+    <arg name="urdf_file" default="$(find lion_arx3_description)/lion_arx3.urdf"/>
     <arg name="gait_file" default="$(find legged_controllers)/config/gait.info"/>
 
     <!-- make the files into global parameters -->
