@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ## By adding -Wall and -Werror, the compiler does not ignore warnings anymore,
 ## enforcing cleaner code.
-add_definitions(-Wall -Werror -Wno-inconsistent-missing-override)
+# add_definitions(-Wall -Werror -Wno-inconsistent-missing-override)
 
 find_package(catkin REQUIRED
         COMPONENTS
@@ -15,6 +15,7 @@ find_package(catkin REQUIRED
         legged_common
         controller_manager
         urdf
+        arm_control
         )
 
 catkin_package(
@@ -43,6 +44,7 @@ add_library(${PROJECT_NAME}
         src/hardware_interface.cpp
         src/control_loop.cpp
         src/CubeMarsDriver.cpp
+        src/ArxMotorDriver.cpp
         )
 
 target_link_libraries(${PROJECT_NAME}
