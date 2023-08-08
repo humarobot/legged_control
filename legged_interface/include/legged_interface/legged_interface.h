@@ -105,6 +105,7 @@ protected:
   std::unique_ptr<StateInputConstraint> getFootsTrackConstraint(const EndEffectorKinematics<scalar_t>& eeKinematics,
                                                                 size_t contactPointIndex);
   std::unique_ptr<StateInputConstraint> getZeroForceConstraint(size_t contactPointIndex);
+  std::unique_ptr<StateInputConstraint> getArmVelocityConstraint();
   ModelSettings modelSettings_;
   mpc::Settings mpcSettings_;
   ddp::Settings ddpSettings_;

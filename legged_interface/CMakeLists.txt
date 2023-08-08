@@ -45,6 +45,7 @@ link_directories(
 
 add_library(${PROJECT_NAME}
         src/legged_interface.cpp
+        src/constraint/ArmZeroVelocityConstraint.cpp
         )
 
 target_link_libraries(${PROJECT_NAME}

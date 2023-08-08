@@ -28,6 +28,7 @@
 #include <ocs2_legged_robot/cost/LeggedRobotQuadraticTrackingCost.h>
 #include <ocs2_legged_robot/dynamics/LeggedRobotDynamicsAD.h>
 #include <ocs2_legged_robot/initialization/LeggedRobotInitializer.h>
+#include "constraint/ArmZeroVelocityConstraint.h"
 
 namespace legged
 {
@@ -130,6 +131,7 @@ void LeggedInterface::setupOptimalControlProblem(const std::string& taskFile, co
     // problemPtr_->equalityConstraintPtr->add(foot_name + "_footsTrack",
                                             // getFootsTrackConstraint(*ee_kinematics_ptr, i));
   }
+  problemPtr_->equalityConstraintPtr->add("armZeroVelocity", getArmVelocityConstraint());
 
   // Pre-computation
   problemPtr_->preComputationPtr.reset(new LeggedRobotPreComputation(*pinocchioInterfacePtr_, centroidalModelInfo_,
@@ -160,6 +162,12 @@ void LeggedInterface::setupModel(const std::string& taskFile, const std::string&
       *pinocchioInterfacePtr_, centroidal_model::loadCentroidalType(taskFile),
       centroidal_model::loadDefaultJointState(pinocchioInterfacePtr_->getModel().nq - 6, referenceFile),
       modelSettings_.contactNames3DoF, modelSettings_.contactNames6DoF);
+  std::cerr<<"centroidalModelInfo_.stateDim: "<<centroidalModelInfo_.stateDim<<std::endl;
+  std::cerr<<"centroidalModelInfo_.inputDim: "<<centroidalModelInfo_.inputDim<<std::endl;
+  std::cerr<<"centroidalModelInfo_.numThreeDofContacts: "<<centroidalModelInfo_.numThreeDofContacts<<std::endl;
+  std::cerr<<"centroidalModelInfo_.numSixDofContacts: "<<centroidalModelInfo_.numSixDofContacts<<std::endl;
+  std::cerr<<"centroidalModelInfo_.actuatedDofNum: "<<centroidalModelInfo_.actuatedDofNum<<std::endl;
+
 }
 
 /******************************************************************************************************/
@@ -337,5 +345,12 @@ std::unique_ptr<StateInputConstraint> LeggedInterface::getZeroForceConstraint(si
 //     return std::unique_ptr<StateInputConstraint>(
 //         new FootsTrackConstraintCppAd(*referenceManagerPtr_, eeKinematics, contactPointIndex));
 // }
+
+std::unique_ptr<StateInputConstraint>
+LeggedInterface::getArmVelocityConstraint()
+{
+    return std::unique_ptr<StateInputConstraint>(
+        new ArmZeroVelocityConstraint());
+}
 
 }  // namespace legged

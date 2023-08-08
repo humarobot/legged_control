@@ -43,6 +43,12 @@ bool LeggedController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHand
   controller_nh.getParam("/task_file", task_file);
   controller_nh.getParam("/urdf_file", urdf_file);
   controller_nh.getParam("/reference_file", reference_file);
+
+  //print the file path
+  ROS_INFO_STREAM("task_file: " << task_file);
+  ROS_INFO_STREAM("urdf_file: " << urdf_file);
+  ROS_INFO_STREAM("reference_file: " << reference_file);
+
   bool verbose;
   loadData::loadCppDataType(task_file, "legged_robot_interface.verbose", verbose);
 
@@ -55,14 +61,15 @@ bool LeggedController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHand
   CentroidalModelPinocchioMapping pinocchio_mapping(legged_interface_->getCentroidalModelInfo());
   PinocchioEndEffectorKinematics ee_kinematics(legged_interface_->getPinocchioInterface(), pinocchio_mapping,
                                                legged_interface_->modelSettings().contactNames3DoF);
-  visualizer_ = std::make_shared<LeggedRobotVisualizer>(legged_interface_->getPinocchioInterface(),
-                                                        legged_interface_->getCentroidalModelInfo(), ee_kinematics, nh);
+  // visualizer_ = std::make_shared<LeggedRobotVisualizer>(legged_interface_->getPinocchioInterface(),
+  //                                                       legged_interface_->getCentroidalModelInfo(), ee_kinematics, nh);
 
   // Hardware interface
   HybridJointInterface* hybrid_joint_interface = robot_hw->get<HybridJointInterface>();
   //Legs handles
   std::vector<std::string> joint_names{ "LF_HAA", "LF_HFE", "LF_KFE", "LH_HAA", "LH_HFE", "LH_KFE",
-                                        "RF_HAA", "RF_HFE", "RF_KFE", "RH_HAA", "RH_HFE", "RH_KFE"};
+                                        "RF_HAA", "RF_HFE", "RF_KFE", "RH_HAA", "RH_HFE", "RH_KFE",
+                                        "joint1","joint2","joint3"};
   for (const auto& joint_name : joint_names)
     hybrid_joint_handles_.push_back(hybrid_joint_interface->getHandle(joint_name));
 
@@ -146,7 +153,10 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
   // auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2-t1);
   // std::cout<<duration.count()<<"us \n";
   
-  vector_t torque = x.tail(12);
+  vector_t torque = x.tail(15);
+  // vector_t joint_acc = vector_t::Zero(legged_interface_->getCentroidalModelInfo().actuatedDofNum);
+  // vector_t z = rbd_conversions_->computeRbdTorqueFromCentroidalModel(optimized_state, optimized_input, joint_acc);
+  // vector_t torque = z.segment<15>(6);
   vector_t pos_des = centroidal_model::getJointAngles(optimized_state, legged_interface_->getCentroidalModelInfo());
   vector_t vel_des = centroidal_model::getJointVelocities(optimized_input, legged_interface_->getCentroidalModelInfo());
 
@@ -158,13 +168,15 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
   }
 
   //PID controller
-  for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j){
+  for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum-3; ++j){
     hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 4, 2.5, torque(j));
-
+  }
+  for (size_t j = legged_interface_->getCentroidalModelInfo().actuatedDofNum-3; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j){
+    hybrid_joint_handles_[j].setCommand(0, 0, 4, 0.5, 0);
   }
 
-  // Visualization
-  visualizer_->update(current_observation_, mpc_mrt_interface_->getPolicy(), mpc_mrt_interface_->getCommand());
+  // // Visualization
+  // visualizer_->update(current_observation_, mpc_mrt_interface_->getPolicy(), mpc_mrt_interface_->getCommand());
 
   // Publish the observation. Only needed for the command interface
   observation_publisher_.publish(ros_msg_conversions::createObservationMsg(current_observation_));
