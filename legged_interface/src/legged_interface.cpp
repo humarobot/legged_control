@@ -132,9 +132,34 @@ void LeggedInterface::setupOptimalControlProblem(const std::string& taskFile, co
     // getFootsTrackConstraint(*ee_kinematics_ptr, i));
   }
   // problemPtr_->equalityConstraintPtr->add("armZeroVelocity", getArmVelocityConstraint());
-  vector3_t arm_joint_pos_desired;
-  arm_joint_pos_desired << 0.0, 0.3, 0.3;
-  problemPtr_->stateSoftConstraintPtr->add("armJointPos", getArmJointPosConstraint(arm_joint_pos_desired));
+  // vector3_t arm_joint_pos_desired;
+  // arm_joint_pos_desired << 0.0, 0.3, 0.3;
+  // problemPtr_->stateSoftConstraintPtr->add("armJointPos", getArmJointPosConstraint(arm_joint_pos_desired));
+  {
+
+    const std::string& hand_name = "lower_arm_link";
+    std::unique_ptr<EndEffectorKinematics<scalar_t>> ee_kinematics_ptr;
+    const auto info_cpp_ad = centroidalModelInfo_.toCppAd();
+    const CentroidalModelPinocchioMappingCppAd pinocchio_mapping_cpp_ad(info_cpp_ad);
+    CentroidalModelPinocchioMapping pinocchio_mapping(centroidalModelInfo_);
+    auto velocity_update_callback = [&info_cpp_ad](const ad_vector_t& state,
+                                                   PinocchioInterfaceCppAd& pinocchioInterfaceAd) {
+      const ad_vector_t q = centroidal_model::getGeneralizedCoordinates(state, info_cpp_ad);
+      updateCentroidalDynamics(pinocchioInterfaceAd, info_cpp_ad, q);
+    };
+    ee_kinematics_ptr.reset(new PinocchioEndEffectorKinematicsCppAd(
+        *pinocchioInterfacePtr_, pinocchio_mapping_cpp_ad, { hand_name }, centroidalModelInfo_.stateDim,
+        centroidalModelInfo_.inputDim, velocity_update_callback, hand_name, modelSettings_.modelFolderCppAd,
+        modelSettings_.recompileLibrariesCppAd, modelSettings_.verboseCppAd));
+    problemPtr_->stateSoftConstraintPtr->add(hand_name + "_armEndEffector",
+                                             getArmEndEffectorConstraint(*ee_kinematics_ptr));
+    problemPtr_->finalSoftConstraintPtr->add(
+        "finalEndEffector", getArmEndEffectorConstraint(*ee_kinematics_ptr));
+    // problemPtr_->softConstraintPtr->add("armJointLimits",
+                                        // getJointLimitSoftConstraint(*pinocchioInterfacePtr_, taskFile, verbose));
+    // problemPtr_->softConstraintPtr->add(hand_name + "_zeroVelocity", getArmZeroVelocityConstraint());
+
+  }
 
   // Pre-computation
   problemPtr_->preComputationPtr.reset(new LeggedRobotPreComputation(*pinocchioInterfacePtr_, centroidalModelInfo_,
@@ -365,6 +390,19 @@ std::unique_ptr<StateCost> LeggedInterface::getArmJointPosConstraint(vector3_t a
   scalar_t muPosition = 100.0;
   std::unique_ptr<StateConstraint> constraint;
   constraint.reset(new ArmJointPosConstraint(arm_joint_pos_desired));
+  std::vector<std::unique_ptr<PenaltyBase>> penaltyArray(3);
+  std::generate_n(penaltyArray.begin(), 3,
+                  [&] { return std::unique_ptr<PenaltyBase>(new QuadraticPenalty(muPosition)); });
+
+  return std::unique_ptr<StateCost>(new StateSoftConstraint(std::move(constraint), std::move(penaltyArray)));
+}
+
+std::unique_ptr<StateCost>
+LeggedInterface::getArmEndEffectorConstraint(const EndEffectorKinematics<scalar_t>& eeKinematics)
+{
+  scalar_t muPosition = 1000.0;
+  std::unique_ptr<StateConstraint> constraint;
+  constraint.reset(new ArmEePositionConstraint(eeKinematics));
   std::vector<std::unique_ptr<PenaltyBase>> penaltyArray(3);
   std::generate_n(penaltyArray.begin(), 3,
                   [&] { return std::unique_ptr<PenaltyBase>(new QuadraticPenalty(muPosition)); });
