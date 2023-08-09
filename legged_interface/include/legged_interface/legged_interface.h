@@ -18,6 +18,8 @@
 
 #include <ocs2_legged_robot/common/ModelSettings.h>
 #include <ocs2_legged_robot/reference_manager/SwitchedModelReferenceManager.h>
+#include "constraint/ArmZeroVelocityConstraint.h"
+#include "constraint/ArmJointPosConstraint.h"
 
 namespace legged
 {
@@ -106,6 +108,8 @@ protected:
                                                                 size_t contactPointIndex);
   std::unique_ptr<StateInputConstraint> getZeroForceConstraint(size_t contactPointIndex);
   std::unique_ptr<StateInputConstraint> getArmVelocityConstraint();
+  // std::unique_ptr<StateInputConstraint> getArmJointPosConstraint(vector3_t);
+  std::unique_ptr<StateCost> getArmJointPosConstraint(vector3_t);
   ModelSettings modelSettings_;
   mpc::Settings mpcSettings_;
   ddp::Settings ddpSettings_;

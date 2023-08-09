@@ -12,6 +12,7 @@
 #include <ocs2_centroidal_model/CentroidalModelPinocchioMapping.h>
 #include <ocs2_centroidal_model/ModelHelperFunctions.h>
 #include <ocs2_core/soft_constraint/StateInputSoftConstraint.h>
+#include <ocs2_core/soft_constraint/StateSoftConstraint.h>
 #include <ocs2_oc/synchronized_module/SolverSynchronizedModule.h>
 #include <ocs2_pinocchio_interface/PinocchioEndEffectorKinematicsCppAd.h>
 
@@ -28,7 +29,6 @@
 #include <ocs2_legged_robot/cost/LeggedRobotQuadraticTrackingCost.h>
 #include <ocs2_legged_robot/dynamics/LeggedRobotDynamicsAD.h>
 #include <ocs2_legged_robot/initialization/LeggedRobotInitializer.h>
-#include "constraint/ArmZeroVelocityConstraint.h"
 
 namespace legged
 {
@@ -129,9 +129,12 @@ void LeggedInterface::setupOptimalControlProblem(const std::string& taskFile, co
     problemPtr_->equalityConstraintPtr->add(foot_name + "_normalVelocity",
                                             getNormalVelocityConstraint(*ee_kinematics_ptr, i));
     // problemPtr_->equalityConstraintPtr->add(foot_name + "_footsTrack",
-                                            // getFootsTrackConstraint(*ee_kinematics_ptr, i));
+    // getFootsTrackConstraint(*ee_kinematics_ptr, i));
   }
-  problemPtr_->equalityConstraintPtr->add("armZeroVelocity", getArmVelocityConstraint());
+  // problemPtr_->equalityConstraintPtr->add("armZeroVelocity", getArmVelocityConstraint());
+  vector3_t arm_joint_pos_desired;
+  arm_joint_pos_desired << 0.0, 0.3, 0.3;
+  problemPtr_->stateSoftConstraintPtr->add("armJointPos", getArmJointPosConstraint(arm_joint_pos_desired));
 
   // Pre-computation
   problemPtr_->preComputationPtr.reset(new LeggedRobotPreComputation(*pinocchioInterfacePtr_, centroidalModelInfo_,
@@ -162,12 +165,13 @@ void LeggedInterface::setupModel(const std::string& taskFile, const std::string&
       *pinocchioInterfacePtr_, centroidal_model::loadCentroidalType(taskFile),
       centroidal_model::loadDefaultJointState(pinocchioInterfacePtr_->getModel().nq - 6, referenceFile),
       modelSettings_.contactNames3DoF, modelSettings_.contactNames6DoF);
-  std::cerr<<"centroidalModelInfo_.stateDim: "<<centroidalModelInfo_.stateDim<<std::endl;
-  std::cerr<<"centroidalModelInfo_.inputDim: "<<centroidalModelInfo_.inputDim<<std::endl;
-  std::cerr<<"centroidalModelInfo_.numThreeDofContacts: "<<centroidalModelInfo_.numThreeDofContacts<<std::endl;
-  std::cerr<<"centroidalModelInfo_.numSixDofContacts: "<<centroidalModelInfo_.numSixDofContacts<<std::endl;
-  std::cerr<<"centroidalModelInfo_.actuatedDofNum: "<<centroidalModelInfo_.actuatedDofNum<<std::endl;
-
+  std::cerr << "centroidalModelInfo_.generalizedCoordinatesNum: " << centroidalModelInfo_.generalizedCoordinatesNum
+            << std::endl;
+  std::cerr << "centroidalModelInfo_.stateDim: " << centroidalModelInfo_.stateDim << std::endl;
+  std::cerr << "centroidalModelInfo_.inputDim: " << centroidalModelInfo_.inputDim << std::endl;
+  std::cerr << "centroidalModelInfo_.numThreeDofContacts: " << centroidalModelInfo_.numThreeDofContacts << std::endl;
+  std::cerr << "centroidalModelInfo_.numSixDofContacts: " << centroidalModelInfo_.numSixDofContacts << std::endl;
+  std::cerr << "centroidalModelInfo_.actuatedDofNum: " << centroidalModelInfo_.actuatedDofNum << std::endl;
 }
 
 /******************************************************************************************************/
@@ -217,22 +221,22 @@ matrix_t LeggedInterface::initializeInputCostWeight(const std::string& taskFile,
   pinocchio::computeJointJacobians(model, data, q);
   pinocchio::updateFramePlacements(model, data);
 
-  matrix_t base2feet_jac(total_contact_dim, info.actuatedDofNum);
+  matrix_t base2feet_jac(total_contact_dim, 12);
   for (size_t i = 0; i < info.numThreeDofContacts; i++)
   {
     matrix_t jac = matrix_t::Zero(6, info.generalizedCoordinatesNum);
     pinocchio::getFrameJacobian(model, data, model.getBodyId(modelSettings_.contactNames3DoF[i]),
                                 pinocchio::LOCAL_WORLD_ALIGNED, jac);
-    base2feet_jac.block(3 * i, 0, 3, info.actuatedDofNum) = jac.block(0, 6, 3, info.actuatedDofNum);
+    base2feet_jac.block(3 * i, 0, 3, 12) = jac.block(0, 6, 3, 12);
   }
 
   matrix_t r_taskspace(info.inputDim, info.inputDim);
   loadData::loadEigenMatrix(taskFile, "R", r_taskspace);
   matrix_t r = r_taskspace;
   // Joint velocities
-  r.block(total_contact_dim, total_contact_dim, info.actuatedDofNum, info.actuatedDofNum) =
+  r.block(total_contact_dim, total_contact_dim, 12, 12) =
       base2feet_jac.transpose() *
-      r_taskspace.block(total_contact_dim, total_contact_dim, info.actuatedDofNum, info.actuatedDofNum) * base2feet_jac;
+      r_taskspace.block(total_contact_dim, total_contact_dim, 12, 12) * base2feet_jac;
   return r;
 }
 
@@ -330,13 +334,13 @@ std::unique_ptr<StateInputConstraint>
 LeggedInterface::getNormalVelocityConstraint(const EndEffectorKinematics<scalar_t>& eeKinematics,
                                              size_t contactPointIndex)
 {
-    return std::unique_ptr<StateInputConstraint>(
-        new NormalVelocityConstraintCppAd(*referenceManagerPtr_, eeKinematics, contactPointIndex));
+  return std::unique_ptr<StateInputConstraint>(
+      new NormalVelocityConstraintCppAd(*referenceManagerPtr_, eeKinematics, contactPointIndex));
 }
 std::unique_ptr<StateInputConstraint> LeggedInterface::getZeroForceConstraint(size_t contactPointIndex)
 {
-    return std::unique_ptr<StateInputConstraint>(
-        new ZeroForceConstraint(*referenceManagerPtr_, contactPointIndex, centroidalModelInfo_));
+  return std::unique_ptr<StateInputConstraint>(
+      new ZeroForceConstraint(*referenceManagerPtr_, contactPointIndex, centroidalModelInfo_));
 }
 // std::unique_ptr<StateInputConstraint>
 // LeggedInterface::getFootsTrackConstraint(const EndEffectorKinematics<scalar_t>& eeKinematics,
@@ -346,11 +350,26 @@ std::unique_ptr<StateInputConstraint> LeggedInterface::getZeroForceConstraint(si
 //         new FootsTrackConstraintCppAd(*referenceManagerPtr_, eeKinematics, contactPointIndex));
 // }
 
-std::unique_ptr<StateInputConstraint>
-LeggedInterface::getArmVelocityConstraint()
+std::unique_ptr<StateInputConstraint> LeggedInterface::getArmVelocityConstraint()
 {
-    return std::unique_ptr<StateInputConstraint>(
-        new ArmZeroVelocityConstraint());
+  return std::unique_ptr<StateInputConstraint>(new ArmZeroVelocityConstraint());
+}
+
+// std::unique_ptr<StateInputConstraint> LeggedInterface::getArmJointPosConstraint(vector3_t arm_joint_pos_desired)
+// {
+//   return std::unique_ptr<StateInputConstraint>(new ArmJointPosConstraint(arm_joint_pos_desired));
+// }
+
+std::unique_ptr<StateCost> LeggedInterface::getArmJointPosConstraint(vector3_t arm_joint_pos_desired)
+{
+  scalar_t muPosition = 100.0;
+  std::unique_ptr<StateConstraint> constraint;
+  constraint.reset(new ArmJointPosConstraint(arm_joint_pos_desired));
+  std::vector<std::unique_ptr<PenaltyBase>> penaltyArray(3);
+  std::generate_n(penaltyArray.begin(), 3,
+                  [&] { return std::unique_ptr<PenaltyBase>(new QuadraticPenalty(muPosition)); });
+
+  return std::unique_ptr<StateCost>(new StateSoftConstraint(std::move(constraint), std::move(penaltyArray)));
 }
 
 }  // namespace legged

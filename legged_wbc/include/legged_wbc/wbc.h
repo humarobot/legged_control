@@ -35,6 +35,7 @@ private:
   Task formulateFrictionConeTask();
   Task formulateBaseAccelTask();
   Task formulateSwingLegTask();
+  Task formulateArmJointTask();
   Task formulateContactForceTask();
 
   size_t num_decision_vars_;

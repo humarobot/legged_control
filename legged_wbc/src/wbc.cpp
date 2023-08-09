@@ -21,7 +21,7 @@ Wbc::Wbc(const std::string& task_file, LeggedInterface& legged_interface,
   , mapping_(info_)
   , ee_kinematics_(ee_kinematics.clone())
 {
-  num_decision_vars_ = info_.generalizedCoordinatesNum + info_.actuatedDofNum + 3 * info_.numThreeDofContacts;
+  num_decision_vars_ = info_.generalizedCoordinatesNum + info_.actuatedDofNum + 3 * info_.numThreeDofContacts; //21+15+3*3=45
   centroidal_dynamics_.setPinocchioInterface(pino_interface_);
   mapping_.setPinocchioInterface(pino_interface_);
   measured_q_ = vector_t(info_.generalizedCoordinatesNum);
@@ -89,7 +89,7 @@ vector_t Wbc::update(const vector_t& state_desired, const vector_t& input_desire
 
   Task task_0 = formulateFloatingBaseEomTask() + formulateNoContactMotionTask();
   Task task_1 = formulateTorqueLimitsTask() + formulateFrictionConeTask();
-  Task task_2 = formulateBaseAccelTask() + formulateSwingLegTask() + formulateContactForceTask();
+  Task task_2 = formulateBaseAccelTask() + formulateSwingLegTask() + formulateContactForceTask() +formulateArmJointTask();
   HoQp ho_qp(task_2, std::make_shared<HoQp>(task_1, std::make_shared<HoQp>(task_0)));
   // Task task = formulateInvDynamicsTask();
   // HoQp ho_qp(task);
@@ -232,6 +232,17 @@ Task Wbc::formulateSwingLegTask()
       j++;
     }
 
+  return Task(a, b, matrix_t(), vector_t());
+}
+
+Task Wbc::formulateArmJointTask()
+{
+  matrix_t a(3, num_decision_vars_);
+  vector_t b(a.rows());
+  a.setZero();
+  b.setZero();
+  a.rightCols(3) = matrix_t::Identity(3, 3);
+  b =  60*(state_desired_.tail(3) - measured_q_.tail(3)) + 1.0*(input_desired_.tail(3) - measured_v_.tail(3));
   return Task(a, b, matrix_t(), vector_t());
 }
 
