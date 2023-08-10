@@ -36,6 +36,7 @@ private:
   Task formulateBaseAccelTask();
   Task formulateSwingLegTask();
   Task formulateArmJointTask();
+  Task formulateArmImpedenceTask();
   Task formulateContactForceTask();
 
   size_t num_decision_vars_;
@@ -49,6 +50,9 @@ private:
   matrix_t j_, dj_;
   contact_flag_t contact_flag_;
   size_t num_contacts_;
+
+  std::vector<vector3_t> pos_measured_, vel_measured_, acc_measured_;
+  std::vector<vector3_t> pos_desired_, vel_desired_, acc_desired_;
 
   // Task Parameters:
   vector_t torque_limits_;

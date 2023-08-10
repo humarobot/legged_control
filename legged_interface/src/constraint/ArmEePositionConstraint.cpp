@@ -41,7 +41,7 @@ vector_t ArmEePositionConstraint::getValue(scalar_t time, const vector_t& state,
                                         Eigen::AngleAxisd(base_euler[0], Eigen::Vector3d::UnitZ()));
 
   vector3_t relative_pos;
-  relative_pos<<0.1, 0.0, 0.3;
+  relative_pos<<0.2, 0.0, 0.3;
   vector3_t pos = base_pos + base_quat * relative_pos;
 
   vector_t constraint(3);
@@ -68,7 +68,7 @@ VectorFunctionLinearApproximation ArmEePositionConstraint::getLinearApproximatio
                                         Eigen::AngleAxisd(base_euler[0], Eigen::Vector3d::UnitZ()));
 
   vector3_t relative_pos;
-  relative_pos<<0.1,0.0,0.3;
+  relative_pos<<0.2,0.0,0.3;
 
   vector3_t pos = base_pos + base_quat * relative_pos;
   

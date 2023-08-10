@@ -33,7 +33,6 @@
 #include <chrono>
 #include <thread>
 
-
 namespace legged
 {
 bool LeggedController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& controller_nh)
@@ -44,7 +43,7 @@ bool LeggedController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHand
   controller_nh.getParam("/urdf_file", urdf_file);
   controller_nh.getParam("/reference_file", reference_file);
 
-  //print the file path
+  // print the file path
   ROS_INFO_STREAM("task_file: " << task_file);
   ROS_INFO_STREAM("urdf_file: " << urdf_file);
   ROS_INFO_STREAM("reference_file: " << reference_file);
@@ -59,29 +58,31 @@ bool LeggedController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHand
   // Visualization
   ros::NodeHandle nh;
   CentroidalModelPinocchioMapping pinocchio_mapping(legged_interface_->getCentroidalModelInfo());
+  std::vector<std::string> contact3Dof_names = legged_interface_->modelSettings().contactNames3DoF;
+  contact3Dof_names.push_back("lower_arm_link");
   PinocchioEndEffectorKinematics ee_kinematics(legged_interface_->getPinocchioInterface(), pinocchio_mapping,
-                                               legged_interface_->modelSettings().contactNames3DoF);
+                                               contact3Dof_names);
   // visualizer_ = std::make_shared<LeggedRobotVisualizer>(legged_interface_->getPinocchioInterface(),
   //                                                       legged_interface_->getCentroidalModelInfo(), ee_kinematics, nh);
 
   // Hardware interface
   HybridJointInterface* hybrid_joint_interface = robot_hw->get<HybridJointInterface>();
-  //Legs handles
-  std::vector<std::string> joint_names{ "LF_HAA", "LF_HFE", "LF_KFE", "LH_HAA", "LH_HFE", "LH_KFE",
-                                        "RF_HAA", "RF_HFE", "RF_KFE", "RH_HAA", "RH_HFE", "RH_KFE",
-                                        "joint1","joint2","joint3"};
+  // Legs handles
+  std::vector<std::string> joint_names{ "LF_HAA", "LF_HFE", "LF_KFE", "LH_HAA", "LH_HFE", "LH_KFE", "RF_HAA", "RF_HFE",
+                                        "RF_KFE", "RH_HAA", "RH_HFE", "RH_KFE", "joint1", "joint2", "joint3" };
   for (const auto& joint_name : joint_names)
     hybrid_joint_handles_.push_back(hybrid_joint_interface->getHandle(joint_name));
 
   ContactSensorInterface* contact_interface = robot_hw->get<ContactSensorInterface>();
   std::vector<ContactSensorHandle> contact_handles;
-  std::vector<std::string> foot_names{"LF_FOOT", "RF_FOOT", "LH_FOOT", "RH_FOOT"};
+  std::vector<std::string> foot_names{ "LF_FOOT", "RF_FOOT", "LH_FOOT", "RH_FOOT" };
   for (auto& name : foot_names)
     contact_handles.push_back(contact_interface->getHandle(name));
 
   // State estimation
   setupStateEstimate(*legged_interface_, hybrid_joint_handles_, contact_handles,
-                     robot_hw->get<hardware_interface::ImuSensorInterface>()->getHandle("unitree_imu"),&current_observation_);
+                     robot_hw->get<hardware_interface::ImuSensorInterface>()->getHandle("unitree_imu"),
+                     &current_observation_);
 
   // Whole body control
   wbc_ = std::make_shared<Wbc>(task_file, *legged_interface_, ee_kinematics, verbose);
@@ -102,7 +103,8 @@ void LeggedController::starting(const ros::Time& time)
 
   TargetTrajectories target_trajectories({ current_observation_.time }, { current_observation_.state },
                                          { current_observation_.input });
-  ModeSchedule default_mode_schedule({ current_observation_.time }, { current_observation_.mode, current_observation_.mode });
+  ModeSchedule default_mode_schedule({ current_observation_.time },
+                                     { current_observation_.mode, current_observation_.mode });
 
   // Set the first observation and command and wait for optimization to finish
   mpc_mrt_interface_->setCurrentObservation(current_observation_);
@@ -117,8 +119,6 @@ void LeggedController::starting(const ros::Time& time)
   ROS_INFO_STREAM("Initial policy has been received.");
 
   mpc_running_ = true;
-  
- 
 }
 
 void LeggedController::update(const ros::Time& time, const ros::Duration& period)
@@ -152,7 +152,7 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
   // auto t2 = std::chrono::steady_clock::now();
   // auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2-t1);
   // std::cout<<duration.count()<<"us \n";
-  
+
   vector_t torque = x.tail(15);
   // vector_t joint_acc = vector_t::Zero(legged_interface_->getCentroidalModelInfo().actuatedDofNum);
   // vector_t z = rbd_conversions_->computeRbdTorqueFromCentroidalModel(optimized_state, optimized_input, joint_acc);
@@ -167,12 +167,15 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
     stopRequest(time);
   }
 
-  //PID controller
-  for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum-3; ++j){
+  // PID controller
+  for (size_t j = 0; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum - 3; ++j)
+  {
     hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 4, 2.5, torque(j));
   }
-  for (size_t j = legged_interface_->getCentroidalModelInfo().actuatedDofNum-3; j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j){
-    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 20, 0.5, torque(j));
+  for (size_t j = legged_interface_->getCentroidalModelInfo().actuatedDofNum - 3;
+       j < legged_interface_->getCentroidalModelInfo().actuatedDofNum; ++j)
+  {
+    hybrid_joint_handles_[j].setCommand(pos_des(j), vel_des(j), 4, 0.5, torque(j));
   }
 
   // // Visualization
@@ -180,7 +183,6 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
 
   // Publish the observation. Only needed for the command interface
   observation_publisher_.publish(ros_msg_conversions::createObservationMsg(current_observation_));
-
 }
 
 LeggedController::~LeggedController()
@@ -261,9 +263,8 @@ void LeggedController::setupStateEstimate(LeggedInterface& legged_interface,
                                           const hardware_interface::ImuSensorHandle& imu_sensor_handle,
                                           SystemObservation* current_observation)
 {
-  state_estimate_ = std::make_shared<KalmanFilterEstimate>(*legged_interface_, hybrid_joint_handles_,
-                                                           contact_sensor_handles, imu_sensor_handle,
-                                                           current_observation);
+  state_estimate_ = std::make_shared<KalmanFilterEstimate>(
+      *legged_interface_, hybrid_joint_handles_, contact_sensor_handles, imu_sensor_handle, current_observation);
   current_observation_.time = 0;
 }
 
@@ -277,9 +278,7 @@ void LeggedCheaterController::setupStateEstimate(LeggedInterface& legged_interfa
                                                              contact_sensor_handles, imu_sensor_handle);
 }
 
-
 }  // namespace legged
-
 
 PLUGINLIB_EXPORT_CLASS(legged::LeggedController, controller_interface::ControllerBase)
 PLUGINLIB_EXPORT_CLASS(legged::LeggedCheaterController, controller_interface::ControllerBase)
