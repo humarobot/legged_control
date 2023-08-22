@@ -29,6 +29,7 @@
 #include <pinocchio/algorithm/frames.hpp>
 #include <pinocchio/algorithm/crba.hpp>
 #include <pinocchio/algorithm/rnea.hpp>
+#include <sensor_msgs/JointState.h>
 
 #include <chrono>
 #include <thread>
@@ -144,6 +145,25 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
   mpc_mrt_interface_->evaluatePolicy(current_observation_.time, current_observation_.state, optimized_state,
                                      optimized_input, planned_mode);
 
+  arm_vel_output_buffer_[0].push_back(optimized_input.tail(3)(0));
+  arm_vel_output_buffer_[1].push_back(optimized_input.tail(3)(1));
+  arm_vel_output_buffer_[2].push_back(optimized_input.tail(3)(2));
+  if(arm_vel_output_buffer_[0].size()<arm_vel_output_buffer_size_)
+  {
+    optimized_input.tail(3)(0) = GetDequeAverage(arm_vel_output_buffer_[0]);
+    optimized_input.tail(3)(1) = GetDequeAverage(arm_vel_output_buffer_[1]);
+    optimized_input.tail(3)(2) = GetDequeAverage(arm_vel_output_buffer_[2]);
+  }
+  else
+  {
+    arm_vel_output_buffer_[0].pop_front();
+    arm_vel_output_buffer_[1].pop_front();
+    arm_vel_output_buffer_[2].pop_front();
+    optimized_input.tail(3)(0) = GetDequeAverage(arm_vel_output_buffer_[0]);
+    optimized_input.tail(3)(1) = GetDequeAverage(arm_vel_output_buffer_[1]);
+    optimized_input.tail(3)(2) = GetDequeAverage(arm_vel_output_buffer_[2]);
+
+  }
   // Whole body control
   current_observation_.input = optimized_input;
 
@@ -183,6 +203,14 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
 
   // Publish the observation. Only needed for the command interface
   observation_publisher_.publish(ros_msg_conversions::createObservationMsg(current_observation_));
+
+  vector_t arm_state = state_estimate_->getArmJointStates();
+  sensor_msgs::JointState arm_msg;
+  arm_msg.header.stamp = ros::Time::now();
+  arm_msg.name = {"joint1","joint2","joint3"};
+  arm_msg.position = {arm_state(0),arm_state(1),arm_state(2)};
+  arm_msg.velocity = {arm_state(3),arm_state(4),arm_state(5)};
+  arm_publisher_.publish(arm_msg);
 }
 
 LeggedController::~LeggedController()
@@ -223,6 +251,7 @@ void LeggedController::setupMpc()
   mpc_->getSolverPtr()->addSynchronizedModule(gait_receiver_ptr);
   mpc_->getSolverPtr()->setReferenceManager(ros_reference_manager_ptr);
   observation_publisher_ = nh.advertise<ocs2_msgs::mpc_observation>(robot_name + "_mpc_observation", 1);
+  arm_publisher_ = nh.advertise<sensor_msgs::JointState>("arm_joint_states", 1);
 
   // auto arm_ref_ptr = std::make_shared<ArmReference>(robot_name);
   // arm_ref_ptr->subscribe(nh);

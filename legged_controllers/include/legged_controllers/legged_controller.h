@@ -66,6 +66,13 @@ protected:
   void inverseKineWBC(const Eigen::Vector3d&, const Eigen::Quaterniond&);
   void updateArmState();
   void impedanceControl();
+  double GetDequeAverage(const std::deque<double>& d) {
+    double sum = 0.0;
+    for (const auto& elem : d) {
+      sum += elem;
+    }
+    return sum / d.size();
+  }
   Eigen::VectorXd arm_q_;
   pinocchio::Model arm_model_;
   pinocchio::Data arm_data_;
@@ -80,7 +87,7 @@ protected:
   std::shared_ptr<StateEstimateBase> state_estimate_;
 
   std::shared_ptr<LeggedRobotVisualizer> visualizer_;
-  ros::Publisher observation_publisher_;
+  ros::Publisher observation_publisher_,arm_publisher_;
 
   SystemObservation current_observation_;
   std::vector<HybridJointHandle> hybrid_joint_handles_;
@@ -89,6 +96,9 @@ protected:
   std::shared_ptr<ArmReference> arm_ref_;
   ros::Subscriber armRefSubscriber_;
   ros::Subscriber odomSubscriber_;
+
+  std::deque<double> arm_vel_output_buffer_[3];
+  int arm_vel_output_buffer_size_{100};
 
   Eigen::Matrix<double, 6, 1> arm_measured_q_,arm_measured_v_;
 

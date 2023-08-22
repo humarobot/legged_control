@@ -53,9 +53,34 @@ void StateEstimateBase::updateJointStates()
 {
   for (size_t i = 0; i < hybrid_joint_handles_.size(); ++i)
   {
-    rbd_state_(6 + i) = hybrid_joint_handles_[i].getPosition();
-    rbd_state_(generalized_coordinates_num_ + 6 + i) = hybrid_joint_handles_[i].getVelocity();
+    if(i>=12){
+      pos_buffer_[i-12].push_back(hybrid_joint_handles_[i].getPosition());
+      vel_buffer_[i-12].push_back(hybrid_joint_handles_[i].getVelocity());
+      if(pos_buffer_[i-12].size() > pos_buffer_size_){
+        pos_buffer_[i-12].pop_front();
+      }
+      if(vel_buffer_[i-12].size() > vel_buffer_size_){
+        vel_buffer_[i-12].pop_front();
+      }
+      rbd_state_(6 + i) = GetDequeAverage(pos_buffer_[i-12]);
+      rbd_state_(generalized_coordinates_num_ + 6 + i) = GetDequeAverage(vel_buffer_[i-12]);
+    }else{
+      rbd_state_(6 + i) = hybrid_joint_handles_[i].getPosition();
+      rbd_state_(generalized_coordinates_num_ + 6 + i) = hybrid_joint_handles_[i].getVelocity();
+    }
+
   }
+}
+
+vector_t StateEstimateBase::getArmJointStates()
+{
+  vector_t arm_joint_states(6);
+  for (size_t i = 0; i < 3; ++i)
+  {
+    arm_joint_states(i) = rbd_state_(18+i);
+    arm_joint_states(3+i) = rbd_state_(generalized_coordinates_num_+18+i);
+  }
+  return arm_joint_states;
 }
 
 void StateEstimateBase::publishMsgs(const nav_msgs::Odometry& odom, const ros::Time& time)

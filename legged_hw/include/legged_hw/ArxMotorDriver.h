@@ -16,6 +16,7 @@
 #include <chrono>
 #include <iostream>
 #include <thread>
+#include <deque>
 #include "Hardware/motor.h"
 #include "hardware_interface.h"
 
@@ -36,6 +37,14 @@ class ArxMotorDriver {
   void MsgToRaw(int, struct can_frame&);
 
   void StatisticPrinter(int);
+  double GetDequeAverage(const std::deque<double>& d) {
+    double sum = 0.0;
+    for (const auto& elem : d) {
+      sum += elem;
+    }
+    return sum / d.size();
+  }
+
 
   double loop_hz_;
   int index_{0};
@@ -49,6 +58,9 @@ class ArxMotorDriver {
   // 映射id到joint_data_
   std::map<int, int> id_to_index_;
 
+  std::deque<double> pos_buffer_[7],vel_buffer_[7];
+  int pos_buffer_size_{1};
+  int vel_buffer_size_{10};
 
   // Timing
   high_resolution_clock::time_point last_time_;

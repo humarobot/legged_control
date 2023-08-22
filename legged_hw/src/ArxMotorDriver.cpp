@@ -122,8 +122,18 @@ void ArxMotorDriver::RawToMsg(int motor_id, struct can_frame& frame)
   if (motor_id >= 1 && motor_id <= 7)
   {
     RV_can_data_repack(frame.can_id, frame.data, frame.can_dlc, 0);
-    joint_data_[id_to_index_[motor_id]].pos_ = rv_motor_msg[motor_id - 1].angle_actual_rad;
-    joint_data_[id_to_index_[motor_id]].vel_ = rv_motor_msg[motor_id - 1].speed_actual_rad;
+    pos_buffer_[motor_id-1].push_back(rv_motor_msg[motor_id - 1].angle_actual_rad);
+    vel_buffer_[motor_id-1].push_back(rv_motor_msg[motor_id - 1].speed_actual_rad);
+    if (pos_buffer_[motor_id-1].size() > pos_buffer_size_)
+    {
+      pos_buffer_[motor_id-1].pop_front();
+    }
+    if (vel_buffer_[motor_id-1].size() > vel_buffer_size_)
+    {
+      vel_buffer_[motor_id-1].pop_front();
+    }
+    joint_data_[id_to_index_[motor_id]].pos_ = GetDequeAverage(pos_buffer_[motor_id-1]);
+    joint_data_[id_to_index_[motor_id]].vel_ = GetDequeAverage(vel_buffer_[motor_id-1]);
     joint_data_[id_to_index_[motor_id]].tau_ = rv_motor_msg[motor_id - 1].current_actual_float;
     // if(motor_id==6){
     // std::cout << "motor_id: " << rv_motor_msg[motor_id - 1].motor_id << std::endl;

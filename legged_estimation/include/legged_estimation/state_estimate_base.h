@@ -13,6 +13,7 @@
 #include <legged_common/hardware_interface/hybrid_joint_interface.h>
 #include <legged_common/hardware_interface/contact_sensor_interface.h>
 #include <legged_interface/legged_interface.h>
+#include <deque>
 
 namespace legged
 {
@@ -27,12 +28,20 @@ public:
                     const hardware_interface::ImuSensorHandle& imu_sensor_handle);
   virtual vector_t update(const ros::Time& time, const ros::Duration& period) = 0;
   size_t getMode();
+  vector_t getArmJointStates();
 
 protected:
   void updateAngular(const Eigen::Quaternion<scalar_t>& quat, const vector_t& angular_vel);
   void updateLinear(const vector_t& pos, const vector_t& linear_vel);
   void updateJointStates();
   void publishMsgs(const nav_msgs::Odometry& odom, const ros::Time& time);
+  double GetDequeAverage(const std::deque<double>& d) {
+    double sum = 0.0;
+    for (const auto& elem : d) {
+      sum += elem;
+    }
+    return sum / d.size();
+  }
 
   LeggedInterface& legged_interface_;
   size_t generalized_coordinates_num_;
@@ -45,6 +54,10 @@ protected:
   std::shared_ptr<realtime_tools::RealtimePublisher<nav_msgs::Odometry>> odom_pub_;
   std::shared_ptr<realtime_tools::RealtimePublisher<geometry_msgs::PoseWithCovarianceStamped>> pose_pub_;
   ros::Time last_pub_;
+
+  std::deque<double> pos_buffer_[3],vel_buffer_[3];
+  int pos_buffer_size_{1};
+  int vel_buffer_size_{10};
 };
 
 template <typename T>
