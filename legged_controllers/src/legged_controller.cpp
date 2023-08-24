@@ -139,13 +139,17 @@ void LeggedController::update(const ros::Time& time, const ros::Duration& period
 
   // Whole body control
   current_observation_.input = optimized_input;
-
+  // vector_t wbc_input(24);
+  // wbc_input.head(12) = optimized_input.head(12);
+  // wbc_input.tail(12) = optimized_input.tail(12);
   // auto t1 = std::chrono::steady_clock::now();
   vector_t x = wbc_->update(optimized_state, optimized_input, measured_rbd_state, planned_mode);
   // auto t2 = std::chrono::steady_clock::now();
   // auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2-t1);
   // std::cout<<duration.count()<<"us \n";
-  
+  // vector_t joint_acc = vector_t::Zero(legged_interface_->getCentroidalModelInfo().actuatedDofNum);
+  // vector_t z = rbd_conversions_->computeRbdTorqueFromCentroidalModel(optimized_state, optimized_input, joint_acc);
+  // vector_t torque = z.tail(12);
   vector_t torque = x.tail(12);
   vector_t pos_des = centroidal_model::getJointAngles(optimized_state, legged_interface_->getCentroidalModelInfo());
   vector_t vel_des = centroidal_model::getJointVelocities(optimized_input, legged_interface_->getCentroidalModelInfo());

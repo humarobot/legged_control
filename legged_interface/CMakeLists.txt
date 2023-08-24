@@ -45,6 +45,7 @@ link_directories(
 
 add_library(${PROJECT_NAME}
         src/legged_interface.cpp
+        src/BaseWrenchConstraint.cpp
         )
 
 target_link_libraries(${PROJECT_NAME}

@@ -94,7 +94,7 @@ void LeggedInterface::setupOptimalControlProblem(const std::string& taskFile, co
   problemPtr_->dynamicsPtr = std::move(dynamics_ptr);
 
   // Cost terms
-  problemPtr_->costPtr->add("baseTrackingCost", getBaseTrackingCost(taskFile, centroidalModelInfo_, verbose));
+  problemPtr_->costPtr->add("baseTrackingCost", getBaseTrackingCost(taskFile, centroidalModelInfo_, true));
 
   // Constraint terms
   // friction cone settings
@@ -131,6 +131,7 @@ void LeggedInterface::setupOptimalControlProblem(const std::string& taskFile, co
                                             // getFootsTrackConstraint(*ee_kinematics_ptr, i));
   }
 
+  problemPtr_->equalityConstraintPtr->add("base_wrench_constraint",getBaseWrenchConstraint());
   // Pre-computation
   problemPtr_->preComputationPtr.reset(new LeggedRobotPreComputation(*pinocchioInterfacePtr_, centroidalModelInfo_,
                                                                      *referenceManagerPtr_->getSwingTrajectoryPlanner(),
@@ -160,6 +161,12 @@ void LeggedInterface::setupModel(const std::string& taskFile, const std::string&
       *pinocchioInterfacePtr_, centroidal_model::loadCentroidalType(taskFile),
       centroidal_model::loadDefaultJointState(pinocchioInterfacePtr_->getModel().nq - 6, referenceFile),
       modelSettings_.contactNames3DoF, modelSettings_.contactNames6DoF);
+  std::cerr<<"centroidalModelInfo_.stateDim: "<<centroidalModelInfo_.stateDim<<std::endl;
+  std::cerr<<"centroidalModelInfo_.inputDim: "<<centroidalModelInfo_.inputDim<<std::endl;
+  std::cerr<<"centroidalModelInfo_.numThreeDofContacts: "<<centroidalModelInfo_.numThreeDofContacts<<std::endl;
+  std::cerr<<"centroidalModelInfo_.numSixDofContacts: "<<centroidalModelInfo_.numSixDofContacts<<std::endl;
+  std::cerr<<"centroidalModelInfo_.actuatedDofNum: "<<centroidalModelInfo_.actuatedDofNum<<std::endl;
+
 }
 
 /******************************************************************************************************/
@@ -222,9 +229,9 @@ matrix_t LeggedInterface::initializeInputCostWeight(const std::string& taskFile,
   loadData::loadEigenMatrix(taskFile, "R", r_taskspace);
   matrix_t r = r_taskspace;
   // Joint velocities
-  r.block(total_contact_dim, total_contact_dim, info.actuatedDofNum, info.actuatedDofNum) =
+  r.block(total_contact_dim+6, total_contact_dim+6, info.actuatedDofNum, info.actuatedDofNum) =
       base2feet_jac.transpose() *
-      r_taskspace.block(total_contact_dim, total_contact_dim, info.actuatedDofNum, info.actuatedDofNum) * base2feet_jac;
+      r_taskspace.block(total_contact_dim+6, total_contact_dim+6, info.actuatedDofNum, info.actuatedDofNum) * base2feet_jac;
   return r;
 }
 
@@ -329,6 +336,12 @@ std::unique_ptr<StateInputConstraint> LeggedInterface::getZeroForceConstraint(si
 {
     return std::unique_ptr<StateInputConstraint>(
         new ZeroForceConstraint(*referenceManagerPtr_, contactPointIndex, centroidalModelInfo_));
+}
+
+std::unique_ptr<StateInputConstraint> LeggedInterface::getBaseWrenchConstraint()
+{
+    return std::unique_ptr<StateInputConstraint>(
+        new BaseWrenchConstraint(*referenceManagerPtr_, centroidalModelInfo_));
 }
 // std::unique_ptr<StateInputConstraint>
 // LeggedInterface::getFootsTrackConstraint(const EndEffectorKinematics<scalar_t>& eeKinematics,

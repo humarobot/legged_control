@@ -18,6 +18,7 @@
 
 #include <ocs2_legged_robot/common/ModelSettings.h>
 #include <ocs2_legged_robot/reference_manager/SwitchedModelReferenceManager.h>
+#include "BaseWrenchConstraint.h"
 
 namespace legged
 {
@@ -105,6 +106,7 @@ protected:
   std::unique_ptr<StateInputConstraint> getFootsTrackConstraint(const EndEffectorKinematics<scalar_t>& eeKinematics,
                                                                 size_t contactPointIndex);
   std::unique_ptr<StateInputConstraint> getZeroForceConstraint(size_t contactPointIndex);
+  std::unique_ptr<StateInputConstraint> getBaseWrenchConstraint();
   ModelSettings modelSettings_;
   mpc::Settings mpcSettings_;
   ddp::Settings ddpSettings_;
