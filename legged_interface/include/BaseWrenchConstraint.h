@@ -3,7 +3,7 @@
 #include <ocs2_centroidal_model/CentroidalModelInfo.h>
 #include <ocs2_core/constraint/StateInputConstraint.h>
 
-#include "ocs2_legged_robot/reference_manager/SwitchedModelReferenceManager.h"
+#include "BaseWrenchReferenceManager.h"
 
 namespace ocs2 {
 namespace legged_robot {
@@ -15,7 +15,7 @@ class BaseWrenchConstraint final : public StateInputConstraint {
    * @param [in] referenceManager : Switched model ReferenceManager.
    * @param [in] info : The centroidal model information.
    */
-  BaseWrenchConstraint(const SwitchedModelReferenceManager& referenceManager, CentroidalModelInfo info);
+  BaseWrenchConstraint(const BaseWrenchReferenceManager& referenceManager, CentroidalModelInfo info);
 
   ~BaseWrenchConstraint() override = default;
   BaseWrenchConstraint* clone() const override { return new BaseWrenchConstraint(*this); }
@@ -29,7 +29,7 @@ class BaseWrenchConstraint final : public StateInputConstraint {
  private:
   BaseWrenchConstraint(const BaseWrenchConstraint& other) = default;
 
-  const SwitchedModelReferenceManager* referenceManagerPtr_;
+  const BaseWrenchReferenceManager* referenceManagerPtr_;
   const CentroidalModelInfo info_;
 };
 

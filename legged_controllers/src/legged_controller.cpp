@@ -210,6 +210,7 @@ void LeggedController::setupMpc()
   auto ros_reference_manager_ptr =
       std::make_shared<RosReferenceManager>(robot_name, legged_interface_->getReferenceManagerPtr());
   ros_reference_manager_ptr->subscribe(nh);
+  legged_interface_->getBaseWrenchReferenceManagerPtr()->subscribe(nh);
   mpc_->getSolverPtr()->addSynchronizedModule(gait_receiver_ptr);
   mpc_->getSolverPtr()->setReferenceManager(ros_reference_manager_ptr);
   observation_publisher_ = nh.advertise<ocs2_msgs::mpc_observation>(robot_name + "_mpc_observation", 1);

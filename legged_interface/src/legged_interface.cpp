@@ -83,6 +83,7 @@ void LeggedInterface::setupOptimalControlProblem(const std::string& taskFile, co
   // Mode schedule manager
   referenceManagerPtr_ = std::make_shared<SwitchedModelReferenceManager>(loadGaitSchedule(referenceFile, verbose),
                                                                          std::move(swing_trajectory_planner));
+  baseWrenchReferenceManagerPtr_ = std::make_shared<BaseWrenchReferenceManager>();
 
   // Optimal control problem
   problemPtr_.reset(new OptimalControlProblem);
@@ -341,7 +342,7 @@ std::unique_ptr<StateInputConstraint> LeggedInterface::getZeroForceConstraint(si
 std::unique_ptr<StateInputConstraint> LeggedInterface::getBaseWrenchConstraint()
 {
     return std::unique_ptr<StateInputConstraint>(
-        new BaseWrenchConstraint(*referenceManagerPtr_, centroidalModelInfo_));
+        new BaseWrenchConstraint(*baseWrenchReferenceManagerPtr_, centroidalModelInfo_));
 }
 // std::unique_ptr<StateInputConstraint>
 // LeggedInterface::getFootsTrackConstraint(const EndEffectorKinematics<scalar_t>& eeKinematics,

@@ -18,6 +18,7 @@
 
 #include <ocs2_legged_robot/common/ModelSettings.h>
 #include <ocs2_legged_robot/reference_manager/SwitchedModelReferenceManager.h>
+#include "BaseWrenchReferenceManager.h"
 #include "BaseWrenchConstraint.h"
 
 namespace legged
@@ -84,6 +85,10 @@ public:
   {
     return referenceManagerPtr_;
   }
+  std::shared_ptr<BaseWrenchReferenceManager> getBaseWrenchReferenceManagerPtr() const
+  {
+    return baseWrenchReferenceManagerPtr_;
+  }
 
 protected:
   virtual void setupModel(const std::string& taskFile, const std::string& urdfFile, const std::string& referenceFile,
@@ -117,6 +122,7 @@ protected:
 
   std::unique_ptr<OptimalControlProblem> problemPtr_;
   std::shared_ptr<SwitchedModelReferenceManager> referenceManagerPtr_;
+  std::shared_ptr<BaseWrenchReferenceManager> baseWrenchReferenceManagerPtr_;
 
   rollout::Settings rolloutSettings_;
   std::unique_ptr<RolloutBase> rolloutPtr_;

@@ -8,7 +8,7 @@ namespace legged_robot {
 /******************************************************************************************************/
 /******************************************************************************************************/
 /******************************************************************************************************/
-BaseWrenchConstraint::BaseWrenchConstraint(const SwitchedModelReferenceManager& referenceManager,
+BaseWrenchConstraint::BaseWrenchConstraint(const BaseWrenchReferenceManager& referenceManager,
                                          CentroidalModelInfo info)
     : StateInputConstraint(ConstraintOrder::Linear),
       referenceManagerPtr_(&referenceManager),
@@ -19,7 +19,9 @@ BaseWrenchConstraint::BaseWrenchConstraint(const SwitchedModelReferenceManager& 
 /******************************************************************************************************/
 vector_t BaseWrenchConstraint::getValue(scalar_t time, const vector_t& state, const vector_t& input, const PreComputation& preComp) const {
   vector_t const_wrench(6);
-  const_wrench<<0.0,0.0,0.0,0.0,0.0,0.0;
+  // double f = 10*sin(time*6);
+  // const_wrench<<f,0.0,0.0,0.0,0.0,0.0;
+  const_wrench = referenceManagerPtr_->getWrench();
   vector_t value = input.segment(3 * 4, 6)-const_wrench;
   return value;
 }
