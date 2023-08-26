@@ -4,6 +4,7 @@
 #include <ocs2_core/constraint/StateInputConstraint.h>
 
 #include "BaseWrenchReferenceManager.h"
+#include <ocs2_robotic_tools/common/RotationTransforms.h>
 
 namespace ocs2 {
 namespace legged_robot {

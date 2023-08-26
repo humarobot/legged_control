@@ -18,11 +18,13 @@ BaseWrenchConstraint::BaseWrenchConstraint(const BaseWrenchReferenceManager& ref
 /******************************************************************************************************/
 /******************************************************************************************************/
 vector_t BaseWrenchConstraint::getValue(scalar_t time, const vector_t& state, const vector_t& input, const PreComputation& preComp) const {
-  vector_t const_wrench(6);
-  // double f = 10*sin(time*6);
-  // const_wrench<<f,0.0,0.0,0.0,0.0,0.0;
-  const_wrench = referenceManagerPtr_->getWrench();
-  vector_t value = input.segment(3 * 4, 6)-const_wrench;
+  vector_t wrench_b(6),wrench_w(6);
+  vector3_t rpy;
+  rpy = state.segment<3>(9);
+  wrench_b = referenceManagerPtr_->getWrench();
+  wrench_w.head(3) = getRotationMatrixFromZyxEulerAngles(rpy)*wrench_b.head(3);
+  wrench_w.tail(3) = getRotationMatrixFromZyxEulerAngles(rpy)*wrench_b.tail(3);
+  vector_t value = input.segment(3 * 4, 6)-wrench_w;
   return value;
 }
 
