@@ -98,6 +98,48 @@ TargetTrajectories cmdVelToTargetTrajectories(const vector_t& cmd_vel, const Sys
   return targetPoseToTargetTrajectories(target_pose, observation, target_reaching_time);
 }
 
+TargetTrajectories splineToTargetTrajectories(const vector_t& cmd, const SystemObservation& observation)
+{
+  // Define a spline
+  std::vector<KnotPoint> knots_fw(4);
+  knots_fw[0].position << 0, 0, 0.5;
+  knots_fw[0].velocity << 0, 0, 0;
+  knots_fw[1].position << 1.5, 1, 0.5;
+  knots_fw[1].velocity << 0.5, 0, 0;
+  knots_fw[2].position << 3.5, -1, 0.5;
+  knots_fw[2].velocity << 0.5, 0, 0;
+  knots_fw[3].position << 5., 0., 0.5;
+  knots_fw[3].velocity << 0, 0, 0;
+  double t_max{ 20.0 };
+  int num_sample{ 201 };
+  HermiteSpline hermite_spline_fw{ knots_fw, t_max };
+
+  // desired time trajectory
+  // const scalar_array_t time_trajectory{ latest_observation_.time, target_reaching_time };
+  scalar_array_t time_trajectory;
+  for (int i = 0; i < num_sample; ++i)
+  {
+    time_trajectory.push_back(i * t_max / (num_sample-1) + observation.time);
+    std::cout <<"time: "<< time_trajectory[i] << std::endl;
+  }
+
+  // desired state trajectory
+
+  vector_array_t state_trajectory(num_sample, vector_t::Zero(observation.state.size()));
+  for (int i = 0; i < num_sample; ++i)
+  {
+    Vector6d target_pose;
+    target_pose << hermite_spline_fw.getPosition(time_trajectory[i]-observation.time), 0, 0, 0;
+    std::cout <<"target_pose: "<< target_pose.transpose() << std::endl;
+    state_trajectory[i] << vector_t::Zero(6), target_pose, DEFAULT_JOINT_STATE;
+  }
+
+  // desired input trajectory (just right dimensions, they are not used)
+  const vector_array_t input_trajectory(num_sample, vector_t::Zero(observation.input.size()));
+
+  return { time_trajectory, state_trajectory, input_trajectory };
+}
+
 int main(int argc, char* argv[])
 {
   const std::string robot_name = "legged_robot";
@@ -117,7 +159,7 @@ int main(int argc, char* argv[])
   loadData::loadCppDataType(task_file, "mpc.timeHorizon", TIME_TO_TARGET);
 
   TargetTrajectoriesPublisher target_pose_command(node_handle, robot_name, &goalToTargetTrajectories,
-                                                  &cmdVelToTargetTrajectories);
+                                                  &cmdVelToTargetTrajectories, &splineToTargetTrajectories);
 
   ros::spin();
   // Successful exit

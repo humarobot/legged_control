@@ -8,14 +8,17 @@
 #include <ros/subscriber.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <std_msgs/Int32.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <ocs2_mpc/SystemObservation.h>
 #include <ocs2_ros_interfaces/command/TargetTrajectoriesRosPublisher.h>
+#include "HermiteSpline.hpp"
 
 namespace legged
 {
+  
 using namespace ocs2;
 
 class TargetTrajectoriesPublisher final
@@ -26,9 +29,11 @@ public:
 
   TargetTrajectoriesPublisher(::ros::NodeHandle& nh, const std::string& topic_prefix,
                               CmdToTargetTrajectories goal_to_target_trajectories,
-                              CmdToTargetTrajectories cmd_vel_to_target_trajectories)
+                              CmdToTargetTrajectories cmd_vel_to_target_trajectories,
+                              CmdToTargetTrajectories spline_to_target_trajectories)
     : goal_to_target_trajectories_(std::move(goal_to_target_trajectories))
     , cmd_vel_to_target_trajectories_(std::move(cmd_vel_to_target_trajectories))
+    , spline_to_target_trajectories_(std::move(spline_to_target_trajectories))
     , tf2_(buffer_)
   {
     // Trajectories publisher
@@ -63,11 +68,10 @@ public:
       cmd_goal[2] = pose.pose.position.z;
       Eigen::Quaternion<scalar_t> q(pose.pose.orientation.w, pose.pose.orientation.x, pose.pose.orientation.y,
                                     pose.pose.orientation.z);
-      //quaternion to rqy euler angle
+      // quaternion to rqy euler angle
       cmd_goal[3] = std::atan2(2 * (q.w() * q.x() + q.y() * q.z()), 1 - 2 * (q.x() * q.x() + q.y() * q.y()));
       cmd_goal[4] = std::asin(2 * (q.w() * q.y() - q.z() * q.x()));
       cmd_goal[5] = std::atan2(2 * (q.w() * q.z() + q.x() * q.y()), 1 - 2 * (q.y() * q.y() + q.z() * q.z()));
-      
 
       const auto trajectories = goal_to_target_trajectories_(cmd_goal, latest_observation_);
       target_trajectories_publisher_->publishTargetTrajectories(trajectories);
@@ -88,16 +92,31 @@ public:
       target_trajectories_publisher_->publishTargetTrajectories(trajectories);
     };
 
+    auto spline_callback = [this](const std_msgs::Int32ConstPtr& msg) {
+      if (latest_observation_.time == 0.0)
+        return;
+      if (msg->data == 1)
+      {
+        const auto trajectories =  spline_to_target_trajectories_(vector_t::Zero(4), latest_observation_);
+        target_trajectories_publisher_->publishTargetTrajectories(trajectories);
+      }
+      else if (msg->data == 2)
+      {
+        // target_trajectories_publisher_->publishTargetTrajectories(trajectories);
+      }
+    };
+
     goal_sub_ = nh.subscribe<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1, goal_callback);
     cmd_vel_sub_ = nh.subscribe<geometry_msgs::Twist>("/cmd_vel", 1, cmd_vel_callback);
+    spline_sub_ = nh.subscribe<std_msgs::Int32>("/spline", 1, spline_callback);
   }
 
 private:
-  CmdToTargetTrajectories goal_to_target_trajectories_, cmd_vel_to_target_trajectories_;
+  CmdToTargetTrajectories goal_to_target_trajectories_, cmd_vel_to_target_trajectories_, spline_to_target_trajectories_;
 
   std::unique_ptr<TargetTrajectoriesRosPublisher> target_trajectories_publisher_;
 
-  ::ros::Subscriber observation_sub_, goal_sub_, cmd_vel_sub_;
+  ::ros::Subscriber observation_sub_, goal_sub_, cmd_vel_sub_, spline_sub_;
   tf2_ros::Buffer buffer_;
   tf2_ros::TransformListener tf2_;
 
