@@ -13,14 +13,7 @@ using namespace legged;
 
 vector_t current_pose_ = vector_t::Zero(6);
 
-namespace
-{
-scalar_t TARGET_DISPLACEMENT_VELOCITY;
-scalar_t TARGET_ROTATION_VELOCITY;
-scalar_t COM_HEIGHT;
-vector_t DEFAULT_JOINT_STATE(12);
-scalar_t TIME_TO_TARGET;
-}  // namespace
+
 
 scalar_t estimateTimeToTarget(const vector_t& desired_base_displacement)
 {

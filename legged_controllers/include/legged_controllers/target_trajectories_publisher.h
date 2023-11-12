@@ -15,11 +15,17 @@
 #include <ocs2_mpc/SystemObservation.h>
 #include <ocs2_ros_interfaces/command/TargetTrajectoriesRosPublisher.h>
 #include "HermiteSpline.hpp"
+#include "lion_msg/baseTraj.h"
 
 namespace legged
 {
-  
+
 using namespace ocs2;
+scalar_t TARGET_DISPLACEMENT_VELOCITY;
+scalar_t TARGET_ROTATION_VELOCITY;
+scalar_t COM_HEIGHT;
+vector_t DEFAULT_JOINT_STATE(12);
+scalar_t TIME_TO_TARGET;
 
 class TargetTrajectoriesPublisher final
 {
@@ -97,7 +103,7 @@ public:
         return;
       if (msg->data == 1)
       {
-        const auto trajectories =  spline_to_target_trajectories_(vector_t::Zero(4), latest_observation_);
+        const auto trajectories = spline_to_target_trajectories_(vector_t::Zero(4), latest_observation_);
         target_trajectories_publisher_->publishTargetTrajectories(trajectories);
       }
       else if (msg->data == 2)
@@ -106,9 +112,49 @@ public:
       }
     };
 
+    auto base_traj_callback = [this](const lion_msg::baseTrajConstPtr& msg) {
+      double T = msg->totalTime;
+      int numKnots = msg->numKnots;
+      double dt = T / (numKnots - 1);
+      // * desired time trajectory
+      scalar_array_t time_trajectory;
+      for (int i = 0; i < numKnots; ++i)
+      {
+        time_trajectory.push_back(i * dt + latest_observation_.time);
+        // std::cout << "time: " << time_trajectory[i] << std::endl;
+      }
+      // * desired state trajectory
+      vector_array_t state_trajectory(numKnots, vector_t::Zero(latest_observation_.state.size()));
+      for (int i = 0; i < numKnots; ++i)
+      {
+        Vector6d target_pose;
+        Eigen::Quaterniond q;
+        q.w() = msg->poses[i].orientation.w;
+        q.x() = msg->poses[i].orientation.x;
+        q.y() = msg->poses[i].orientation.y;
+        q.z() = msg->poses[i].orientation.z;
+        target_pose[0] = msg->poses[i].position.x;
+        target_pose[1] = msg->poses[i].position.y;
+        target_pose[2] = msg->poses[i].position.z;
+        target_pose[3] = std::atan2(2 * (q.w() * q.x() + q.y() * q.z()), 1 - 2 * (q.x() * q.x() + q.y() * q.y()));
+        target_pose[4] = std::asin(2 * (q.w() * q.y() - q.z() * q.x()));
+        target_pose[5] = std::atan2(2 * (q.w() * q.z() + q.x() * q.y()), 1 - 2 * (q.y() * q.y() + q.z() * q.z()));
+
+        // std::cout << "target_pose: " << target_pose.transpose() << std::endl;
+        state_trajectory[i] << vector_t::Zero(6), target_pose, DEFAULT_JOINT_STATE;
+      }
+
+      // * desired input trajectory (just right dimensions, they are not used)
+      const vector_array_t input_trajectory(numKnots, vector_t::Zero(latest_observation_.input.size()));
+
+      TargetTrajectories trajectories{ time_trajectory, state_trajectory, input_trajectory };
+      target_trajectories_publisher_->publishTargetTrajectories(trajectories);
+    };
+
     goal_sub_ = nh.subscribe<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1, goal_callback);
     cmd_vel_sub_ = nh.subscribe<geometry_msgs::Twist>("/cmd_vel", 1, cmd_vel_callback);
     spline_sub_ = nh.subscribe<std_msgs::Int32>("/spline", 1, spline_callback);
+    base_traj_sub_ = nh.subscribe<lion_msg::baseTraj>("/base_trajectory_topic", 1, base_traj_callback);
   }
 
 private:
@@ -116,7 +162,7 @@ private:
 
   std::unique_ptr<TargetTrajectoriesRosPublisher> target_trajectories_publisher_;
 
-  ::ros::Subscriber observation_sub_, goal_sub_, cmd_vel_sub_, spline_sub_;
+  ::ros::Subscriber observation_sub_, goal_sub_, cmd_vel_sub_, spline_sub_, base_traj_sub_;
   tf2_ros::Buffer buffer_;
   tf2_ros::TransformListener tf2_;
 

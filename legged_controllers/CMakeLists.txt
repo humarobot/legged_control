@@ -16,6 +16,7 @@ find_package(catkin REQUIRED
         controller_interface
         ocs2_legged_robot_ros
         angles
+        lion_msg
         )
 
 find_package(PkgConfig REQUIRED)
