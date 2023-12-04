@@ -8,12 +8,12 @@
 #include <ocs2_core/misc/LoadData.h>
 #include <ocs2_robotic_tools/common/RotationTransforms.h>
 #include "angles/angles.h"
+#include "trajectoryLoader.hpp"
 
 using namespace legged;
 
 vector_t current_pose_ = vector_t::Zero(6);
-
-
+TrajectoryLoader trajectory_loader;
 
 scalar_t estimateTimeToTarget(const vector_t& desired_base_displacement)
 {
@@ -93,44 +93,51 @@ TargetTrajectories cmdVelToTargetTrajectories(const vector_t& cmd_vel, const Sys
 
 TargetTrajectories splineToTargetTrajectories(const vector_t& cmd, const SystemObservation& observation)
 {
-  // Define a spline
-  std::vector<KnotPoint> knots_fw(4);
-  knots_fw[0].position << 0, 0, 0.5;
-  knots_fw[0].velocity << 0, 0, 0;
-  knots_fw[1].position << 1.5, 1, 0.5;
-  knots_fw[1].velocity << 0.5, 0, 0;
-  knots_fw[2].position << 3.5, -1, 0.5;
-  knots_fw[2].velocity << 0.5, 0, 0;
-  knots_fw[3].position << 5., 0., 0.5;
-  knots_fw[3].velocity << 0, 0, 0;
-  double t_max{ 20.0 };
-  int num_sample{ 201 };
-  HermiteSpline hermite_spline_fw{ knots_fw, t_max };
-
-  // desired time trajectory
-  // const scalar_array_t time_trajectory{ latest_observation_.time, target_reaching_time };
-  scalar_array_t time_trajectory;
-  for (int i = 0; i < num_sample; ++i)
+  if (cmd(0) == 0)
   {
-    time_trajectory.push_back(i * t_max / (num_sample-1) + observation.time);
-    std::cout <<"time: "<< time_trajectory[i] << std::endl;
+    const scalar_t target_reaching_time = observation.time + 2.0;
+    vector_array_t state_trajectory(1, vector_t::Zero(observation.state.size()));
+    vector_array_t input_trajectory(1, vector_t::Zero(observation.input.size()));
+    
+    Vector6d target_pose = trajectory_loader.GetBaseStateTrajectory().col(0);
+    vector_t current_pose = observation.state.segment<6>(6);
+    target_pose.head(2) = target_pose.head(2) + current_pose.head(2);
+    target_pose(3) = target_pose(3) + current_pose(3);
+    return targetPoseToTargetTrajectories(target_pose, observation, target_reaching_time);
   }
-
-  // desired state trajectory
-
-  vector_array_t state_trajectory(num_sample, vector_t::Zero(observation.state.size()));
-  for (int i = 0; i < num_sample; ++i)
+  else if (cmd(0) == 1)
   {
-    Vector6d target_pose;
-    target_pose << hermite_spline_fw.getPosition(time_trajectory[i]-observation.time), 0, 0, 0;
-    std::cout <<"target_pose: "<< target_pose.transpose() << std::endl;
-    state_trajectory[i] << vector_t::Zero(6), target_pose, DEFAULT_JOINT_STATE;
+    double t_max{ 3 };
+
+    auto state_t = trajectory_loader.GetBaseStateTrajectory();
+    auto vel_t = trajectory_loader.GetBaseVelTrajectory();
+    int num_sample = state_t.cols();
+    // * desired time trajectory
+    // const scalar_array_t time_trajectory{ latest_observation_.time, target_reaching_time };
+    scalar_array_t time_trajectory;
+    for (int i = 0; i < num_sample; ++i)
+    {
+      time_trajectory.push_back(i * t_max / (num_sample - 1) + observation.time);
+      // std::cout <<"time: "<< time_trajectory[i] << std::endl;
+    }
+
+    // * desired state trajectory
+    vector_array_t state_trajectory(num_sample, vector_t::Zero(observation.state.size()));
+    // get current base state
+    vector_t current_pose = observation.state.segment<6>(6);
+    for (int i = 0; i < num_sample; ++i)
+    {
+      Vector6d target_pose;
+      target_pose << state_t.col(i);
+      target_pose.head(2) = target_pose.head(2) + current_pose.head(2);
+      target_pose(3) = target_pose(3) + current_pose(3);
+      // std::cout <<"target_pose: "<< target_pose.transpose() << std::endl;
+      state_trajectory[i] << vector_t::Zero(6), target_pose, DEFAULT_JOINT_STATE;
+    }
+    //  * desired input trajectory (just right dimensions, they are not used)
+    const vector_array_t input_trajectory(num_sample, vector_t::Zero(observation.input.size()));
+    return { time_trajectory, state_trajectory, input_trajectory };
   }
-
-  // desired input trajectory (just right dimensions, they are not used)
-  const vector_array_t input_trajectory(num_sample, vector_t::Zero(observation.input.size()));
-
-  return { time_trajectory, state_trajectory, input_trajectory };
 }
 
 int main(int argc, char* argv[])

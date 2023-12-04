@@ -69,6 +69,7 @@ target_compile_options(${PROJECT_NAME} PUBLIC ${OCS2_CXX_FLAGS})
 add_executable(legged_target_trajectories_publisher
         src/target_trajectories_publisher.cpp
         src/HermiteSpline.cpp
+        src/trajectoryLoader.cpp
         )
 add_dependencies(legged_target_trajectories_publisher
         ${PROJECT_NAME}
@@ -79,6 +80,7 @@ target_link_libraries(legged_target_trajectories_publisher
         ${catkin_LIBRARIES}
         )
 target_compile_options(legged_target_trajectories_publisher PRIVATE ${OCS2_CXX_FLAGS})
+target_compile_definitions(legged_target_trajectories_publisher PRIVATE CMAKE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 
 # Mark executables and/or libraries for installation
 install(TARGETS ${PROJECT_NAME}

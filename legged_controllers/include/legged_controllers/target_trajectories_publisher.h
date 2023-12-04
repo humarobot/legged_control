@@ -9,6 +9,7 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <std_msgs/Int32.h>
+#include <std_msgs/Bool.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
@@ -98,18 +99,23 @@ public:
       target_trajectories_publisher_->publishTargetTrajectories(trajectories);
     };
 
-    auto spline_callback = [this](const std_msgs::Int32ConstPtr& msg) {
+    auto spline_callback = [this](const std_msgs::Bool::ConstPtr &msg) {
       if (latest_observation_.time == 0.0)
         return;
-      if (msg->data == 1)
+      if (msg->data) {
+        std::cout << "ExecuteTrajectoryCallback" << std::endl;
+        execPriority_++;
+      }
+      if (execPriority_ == 1)
       {
-        const auto trajectories = spline_to_target_trajectories_(vector_t::Zero(4), latest_observation_);
+        const auto trajectories = spline_to_target_trajectories_(vector_t::Zero(1), latest_observation_);
         target_trajectories_publisher_->publishTargetTrajectories(trajectories);
+      } else if (execPriority_ == 2){
+        const auto trajectories = spline_to_target_trajectories_(vector_t::Ones(1), latest_observation_);
+        target_trajectories_publisher_->publishTargetTrajectories(trajectories);
+        execPriority_ = 0;
       }
-      else if (msg->data == 2)
-      {
-        // target_trajectories_publisher_->publishTargetTrajectories(trajectories);
-      }
+      
     };
 
     auto base_traj_callback = [this](const lion_msg::baseTrajConstPtr& msg) {
@@ -153,7 +159,7 @@ public:
 
     goal_sub_ = nh.subscribe<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1, goal_callback);
     cmd_vel_sub_ = nh.subscribe<geometry_msgs::Twist>("/cmd_vel", 1, cmd_vel_callback);
-    spline_sub_ = nh.subscribe<std_msgs::Int32>("/spline", 1, spline_callback);
+    spline_sub_ = nh.subscribe<std_msgs::Bool>("/execute_traj", 1, spline_callback);
     base_traj_sub_ = nh.subscribe<lion_msg::baseTraj>("/base_trajectory_topic", 1, base_traj_callback);
   }
 
@@ -168,6 +174,7 @@ private:
 
   mutable std::mutex latest_observation_mutex_;
   SystemObservation latest_observation_;
+  int execPriority_{0};
 };
 
 }  // namespace legged
