@@ -34,7 +34,7 @@ CheckOptions:
     value: CamelCase
   # method names
   - key: readability-identifier-naming.MethodCase
-    value: camelBack
+    value: CamelCase
   # variable names
   - key: readability-identifier-naming.VariableCase
     value: lower_case

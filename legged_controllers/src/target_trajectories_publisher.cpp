@@ -12,8 +12,7 @@
 
 using namespace legged;
 
-vector_t current_pose_ = vector_t::Zero(6);
-TrajectoryLoader trajectory_loader;
+vector_t CURRENT_POSE = vector_t::Zero(6);
 
 scalar_t estimateTimeToTarget(const vector_t& desired_base_displacement)
 {
@@ -69,18 +68,18 @@ TargetTrajectories cmdVelToTargetTrajectories(const vector_t& cmd_vel, const Sys
   // if cmd_vel(0),cmd_vel(1),cmd_vel(3) is not near zero, update current_pose_
   if (std::abs(cmd_vel(0)) > 1e-3 || std::abs(cmd_vel(1)) > 1e-3 || std::abs(cmd_vel(3)) > 1e-3)
   {
-    current_pose_ = observation.state.segment<6>(6);
+    CURRENT_POSE = observation.state.segment<6>(6);
   }
-  const Eigen::Matrix<scalar_t, 3, 1> zyx = current_pose_.tail(3);
+  const Eigen::Matrix<scalar_t, 3, 1> zyx = CURRENT_POSE.tail(3);
   vector_t cmd_vel_rot = getRotationMatrixFromZyxEulerAngles(zyx) * cmd_vel.head(3);
 
   const scalar_t time_to_target = TIME_TO_TARGET;
   const vector_t target_pose = [&]() {
     vector_t target(6);
-    target(0) = current_pose_(0) + cmd_vel_rot(0) * time_to_target;
-    target(1) = current_pose_(1) + cmd_vel_rot(1) * time_to_target;
+    target(0) = CURRENT_POSE(0) + cmd_vel_rot(0) * time_to_target;
+    target(1) = CURRENT_POSE(1) + cmd_vel_rot(1) * time_to_target;
     target(2) = COM_HEIGHT;
-    target(3) = current_pose_(3) + cmd_vel(3) * time_to_target;
+    target(3) = CURRENT_POSE(3) + cmd_vel(3) * time_to_target;
     target(4) = 0;
     target(5) = 0;
     return target;
@@ -96,21 +95,25 @@ TargetTrajectories splineToTargetTrajectories(const vector_t& cmd, const SystemO
   if (cmd(0) == 0)
   {
     const scalar_t target_reaching_time = observation.time + 2.0;
-    vector_array_t state_trajectory(1, vector_t::Zero(observation.state.size()));
-    vector_array_t input_trajectory(1, vector_t::Zero(observation.input.size()));
-    
-    Vector6d target_pose = trajectory_loader.GetBaseStateTrajectory().col(0);
+    const scalar_array_t time_trajectory{ observation.time, target_reaching_time };
+
+    vector_array_t state_trajectory(2, vector_t::Zero(observation.state.size()));
+    Vector6d target_pose = TRAJECTORY_LOADER.GetBaseStateTrajectory().col(0);
     vector_t current_pose = observation.state.segment<6>(6);
     target_pose.head(2) = target_pose.head(2) + current_pose.head(2);
     target_pose(3) = target_pose(3) + current_pose(3);
-    return targetPoseToTargetTrajectories(target_pose, observation, target_reaching_time);
+    state_trajectory[0] << vector_t::Zero(6), current_pose, DEFAULT_JOINT_STATE;
+    state_trajectory[1] << vector_t::Zero(6), target_pose, DEFAULT_JOINT_STATE;
+    vector_array_t input_trajectory(2, vector_t::Zero(observation.input.size()));
+    
+    return { time_trajectory, state_trajectory, input_trajectory };
   }
   else if (cmd(0) == 1)
   {
     double t_max{ 3 };
 
-    auto state_t = trajectory_loader.GetBaseStateTrajectory();
-    auto vel_t = trajectory_loader.GetBaseVelTrajectory();
+    auto state_t = TRAJECTORY_LOADER.GetBaseStateTrajectory();
+    auto vel_t = TRAJECTORY_LOADER.GetBaseVelTrajectory();
     int num_sample = state_t.cols();
     // * desired time trajectory
     // const scalar_array_t time_trajectory{ latest_observation_.time, target_reaching_time };

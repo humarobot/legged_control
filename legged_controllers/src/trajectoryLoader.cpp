@@ -1,8 +1,11 @@
 #include "trajectoryLoader.hpp"
 
-Eigen::MatrixXd TrajectoryLoader::LoadMatrix(std::string fileName) {
+int TrajectoryLoader::LoadMatrix(std::string fileName,Eigen::MatrixXd& matrix) {
   std::vector<double> matrixEntries;
   std::ifstream matrixDataFile(fileName);
+  if(matrixDataFile.fail()){
+    return 1;
+  }
   std::string matrixRowString;
   std::string matrixEntry;
   int matrixRowNumber = 0;
@@ -22,9 +25,11 @@ Eigen::MatrixXd TrajectoryLoader::LoadMatrix(std::string fileName) {
     }
     matrixRowNumber++;  // update the column numbers
   }
-  return Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(
+  matrix =  Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(
       matrixEntries.data(), matrixRowNumber, matrixEntries.size() / matrixRowNumber);
+  return 0;
 }
+
 
 Eigen::MatrixXd TrajectoryLoader::GetBaseStateTrajectory() const { return stateTrajectory_.topRows(6); }
 

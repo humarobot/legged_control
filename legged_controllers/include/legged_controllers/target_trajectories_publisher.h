@@ -10,6 +10,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <std_msgs/Int32.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/String.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
@@ -17,9 +18,12 @@
 #include <ocs2_ros_interfaces/command/TargetTrajectoriesRosPublisher.h>
 #include "HermiteSpline.hpp"
 #include "lion_msg/baseTraj.h"
+#include "trajectoryLoader.hpp"
 
 namespace legged
 {
+
+TrajectoryLoader TRAJECTORY_LOADER;
 
 using namespace ocs2;
 scalar_t TARGET_DISPLACEMENT_VELOCITY;
@@ -99,10 +103,11 @@ public:
       target_trajectories_publisher_->publishTargetTrajectories(trajectories);
     };
 
-    auto spline_callback = [this](const std_msgs::Bool::ConstPtr &msg) {
+    auto spline_callback = [this](const std_msgs::Bool::ConstPtr& msg) {
       if (latest_observation_.time == 0.0)
         return;
-      if (msg->data) {
+      if (msg->data)
+      {
         std::cout << "ExecuteTrajectoryCallback" << std::endl;
         execPriority_++;
       }
@@ -110,12 +115,13 @@ public:
       {
         const auto trajectories = spline_to_target_trajectories_(vector_t::Zero(1), latest_observation_);
         target_trajectories_publisher_->publishTargetTrajectories(trajectories);
-      } else if (execPriority_ == 2){
+      }
+      else if (execPriority_ == 2)
+      {
         const auto trajectories = spline_to_target_trajectories_(vector_t::Ones(1), latest_observation_);
         target_trajectories_publisher_->publishTargetTrajectories(trajectories);
         execPriority_ = 0;
       }
-      
     };
 
     auto base_traj_callback = [this](const lion_msg::baseTrajConstPtr& msg) {
@@ -157,10 +163,24 @@ public:
       target_trajectories_publisher_->publishTargetTrajectories(trajectories);
     };
 
+    auto load_traj_callback = [this](const std_msgs::StringConstPtr& msg) {
+      if (execPriority_ != 0)
+      {
+        ROS_INFO("\033[1;31mexecPriority_ !=0, can't load trajectory\033[0m");
+        return;
+      }
+      std::string path = std::string(CMAKE_DIR) + std::string("/result/");
+      std::string prefix = msg->data;
+      std::string state_file_path = path + prefix + std::string("_state.csv");
+      std::string velocity_file_path = path + prefix + std::string("_vel.csv");
+      TRAJECTORY_LOADER.UpdateTrajectory(state_file_path, velocity_file_path);
+    };
+
     goal_sub_ = nh.subscribe<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1, goal_callback);
     cmd_vel_sub_ = nh.subscribe<geometry_msgs::Twist>("/cmd_vel", 1, cmd_vel_callback);
     spline_sub_ = nh.subscribe<std_msgs::Bool>("/execute_traj", 1, spline_callback);
     base_traj_sub_ = nh.subscribe<lion_msg::baseTraj>("/base_trajectory_topic", 1, base_traj_callback);
+    load_traj_sub_ = nh.subscribe<std_msgs::String>("/load_traj", 10, load_traj_callback);
   }
 
 private:
@@ -168,13 +188,13 @@ private:
 
   std::unique_ptr<TargetTrajectoriesRosPublisher> target_trajectories_publisher_;
 
-  ::ros::Subscriber observation_sub_, goal_sub_, cmd_vel_sub_, spline_sub_, base_traj_sub_;
+  ::ros::Subscriber observation_sub_, goal_sub_, cmd_vel_sub_, spline_sub_, base_traj_sub_, load_traj_sub_;
   tf2_ros::Buffer buffer_;
   tf2_ros::TransformListener tf2_;
 
   mutable std::mutex latest_observation_mutex_;
   SystemObservation latest_observation_;
-  int execPriority_{0};
+  int execPriority_{ 0 };
 };
 
 }  // namespace legged

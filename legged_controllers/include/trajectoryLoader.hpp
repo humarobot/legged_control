@@ -3,7 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
-
+#include "ros/ros.h"
 
 class TrajectoryLoader {
  private:
@@ -14,24 +14,38 @@ class TrajectoryLoader {
   Eigen::MatrixXd stateTrajectory_;
   Eigen::MatrixXd velTrajectory_;
 
-  Eigen::MatrixXd LoadMatrix(std::string fileName);
+  int LoadMatrix(std::string fileName,Eigen::MatrixXd& matrix);
 
  public:
  double totalTime_{3.0};
   TrajectoryLoader() {
-    stateTrajectory_ = LoadMatrix(stateFilePath_);
-    velTrajectory_ = LoadMatrix(velocityFilePath_);
-    // std::cout<<"stateTrajectory_:"<<std::endl;
-    // std::cout<<stateTrajectory_.transpose()<<std::endl;
-    // std::cout<<"velTrajectory_:"<<std::endl;
-    // std::cout<<velTrajectory_.transpose()<<std::endl;
+    if(LoadMatrix(stateFilePath_,stateTrajectory_)!=0)
+      ROS_INFO("\033[1;31mCan't open %s\033[0m", stateFilePath_.c_str());
+    if(LoadMatrix(velocityFilePath_,velTrajectory_)!=0)
+      ROS_INFO("\033[1;31mCan't open %s\033[0m", velocityFilePath_.c_str());
+    // ROS_INFO("stateTrajectory_:");
+    // ROS_INFO_STREAM(stateTrajectory_.transpose());
+    // ROS_INFO("velTrajectory_:");
+    // ROS_INFO_STREAM(velTrajectory_.transpose());
   }
   // Constructor with default values for total time and time step
   TrajectoryLoader(std::string stateFilePath, std::string velocityFilePath, double totalTime = 3.0,
                    double timeStep = 0.05)
       : totalTime_(totalTime), timeStep_(timeStep) {
-    stateTrajectory_ = LoadMatrix(stateFilePath);
-    velTrajectory_ = LoadMatrix(velocityFilePath);
+    if(LoadMatrix(stateFilePath,stateTrajectory_)!=0)
+      ROS_INFO("\033[1;31mCan't open %s\033[0m", stateFilePath_.c_str());
+    if(LoadMatrix(velocityFilePath,velTrajectory_)!=0)
+      ROS_INFO("\033[1;31mCan't open %s\033[0m", velocityFilePath_.c_str());
+  }
+
+  void UpdateTrajectory(std::string stateFilePath, std::string velocityFilePath, double totalTime = 3.0,
+                        double timeStep = 0.05) {
+    totalTime_ = totalTime;
+    timeStep_ = timeStep;
+    if(LoadMatrix(stateFilePath,stateTrajectory_)!=0)
+      ROS_INFO("\033[1;31mCan't open %s\033[0m", stateFilePath_.c_str());
+    if(LoadMatrix(velocityFilePath,velTrajectory_)!=0)
+      ROS_INFO("\033[1;31mCan't open %s\033[0m", velocityFilePath_.c_str());
   }
 
   // Getters
