@@ -173,7 +173,15 @@ public:
       std::string prefix = msg->data;
       std::string state_file_path = path + prefix + std::string("_state.csv");
       std::string velocity_file_path = path + prefix + std::string("_vel.csv");
-      TRAJECTORY_LOADER.UpdateTrajectory(state_file_path, velocity_file_path);
+      if(prefix == "moveSin"){
+        TRAJECTORY_LOADER.UpdateTrajectory(state_file_path, velocity_file_path,10.0);
+      }else if(prefix == "moveForward"){
+        TRAJECTORY_LOADER.UpdateTrajectory(state_file_path, velocity_file_path,10.0);
+      }
+      else{
+        TRAJECTORY_LOADER.UpdateTrajectory(state_file_path, velocity_file_path);
+      }
+      
     };
 
     goal_sub_ = nh.subscribe<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1, goal_callback);

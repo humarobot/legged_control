@@ -114,6 +114,7 @@ TargetTrajectories splineToTargetTrajectories(const vector_t& cmd, const SystemO
 
     auto state_t = TRAJECTORY_LOADER.GetBaseStateTrajectory();
     auto vel_t = TRAJECTORY_LOADER.GetBaseVelTrajectory();
+    t_max = TRAJECTORY_LOADER.totalTime_;
     int num_sample = state_t.cols();
     // * desired time trajectory
     // const scalar_array_t time_trajectory{ latest_observation_.time, target_reaching_time };
